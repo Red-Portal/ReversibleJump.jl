@@ -1,6 +1,13 @@
-using ReversibleJump
+
+using AbstractMCMC
+using Distributions
+using Random
 using Test
 
-@testset "ReversibleJump.jl" begin
-    # Write your tests here.
-end
+using ReversibleJump
+
+# Models used in the tests
+include("models/categorical.jl")
+
+# Tests
+include("proposal_ais.jl")
