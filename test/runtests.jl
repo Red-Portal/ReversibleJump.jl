@@ -10,4 +10,5 @@ using ReversibleJump
 include("models/categorical.jl")
 
 # Tests
-include("proposal_ais.jl")
+include("ais.jl")
+include("indep.jl")
