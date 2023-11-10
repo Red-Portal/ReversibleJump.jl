@@ -12,3 +12,4 @@ include("models/categorical.jl")
 # Tests
 include("ais.jl")
 include("indep.jl")
+include("jump.jl")

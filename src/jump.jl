@@ -15,13 +15,13 @@ function step_jump(
     ℓα = min(0, ℓr - log(q_k′/q_k))
     α  = exp(ℓα)
         
-    stats = (move = move, jump_rate=α,)
+    stats = (move = move, jump_acceptance_rate=α,)
     
     if  log(rand(rng)) < ℓα
-        stats′ = merge(stats, (has_jumped=true,))
+        stats′ = merge(stats, (jump_accepted=true,))
         @set prop.stats = stats′
     else
-        stats′ = merge(stats, (has_jumped=false,))
+        stats′ = merge(stats, (jump_accepted=false,))
         @set prev.stats = stats′
     end
 end

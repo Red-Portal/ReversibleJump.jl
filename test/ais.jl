@@ -3,10 +3,10 @@
     rng   = Random.default_rng()
     model = CategoricalModelSpace(Categorical([0.2, 0.8]), -30)
     prop  = ConstantLocalProposal()
+    mcmc  = IdentityKernel()
 
     @testset for annealing_path = [GeometricPath(), ArithmeticPath()]
-        jump  = AnnealedJumpProposal(32, prop, annealing_path)
-        mcmc  = IdentityKernel()
+        jump  = AnnealedJumpProposal(4, prop, annealing_path)
 
         @testset "birth" begin
             rng    = Random.default_rng()
