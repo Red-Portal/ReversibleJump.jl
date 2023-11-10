@@ -1,45 +1,78 @@
 
-function proposal_ais(
-    rng::Random.AbstractRNG, θ, model, ℓπ, G⁻¹, ϕ_ktok′, ϕ_k′tok, T, kernel
+struct Birth  <: AbstractJumpMove end
+struct Death  <: AbstractJumpMove end
+
+function propose_jump(
+    rng  ::Random.AbstractRNG,
+         ::Birth,
+    jump ::IndepJumpProposal,
+    prev ::RJState,
+         ::Any,
+    model,
 )
-    #=
-        Generic Annealed Importance Sampling Jump Proposal
+    #= 
+        Independent Birth Proposal
 
-        G. Karagiannis, C. Andrieu, 
-        "Annealed Importance Sampling Reversible Jump MCMC Algorithms"
-        in Journal of Computational and Graphical Statistics, 2013.
-
-        If this is birth proposal, k_birth is the index of the "newborn".
+        Peter J. Green
+        "Reversible jump Markov chain Monte Carlo computation and Bayesian model determination"
+        Biometrika, 1995.
     =##
-    ∑α  = 0.0
-    n_α = 0
-    ℓr  = -ℓπ - ϕ_ktok′(θ)
-    for t = 1:T-1
-        target_tempered = (θ_) -> begin
-            ℓρ_T = logdensity(model, θ_)      + ϕ_k′tok(θ_)
-            ℓρ_0 = logdensity(model, G⁻¹(θ_)) + ϕ_ktok′(θ_)
-            #ℓγ  = log(t / T)
-            #logaddexp(ℓρ_0 + log1mexp(ℓγ), ℓρ_T + ℓγ)
-            γ = (t/T)
-            γ*ℓρ_T + (1 - γ)*ℓρ_0
-        end
-        ℓρₜ = target_tempered(θ)
-        if !isfinite(ℓρₜ)
-            break
-        end
-        θ, ℓρₜ′, stat = kernel(rng, target_tempered, θ)
-        ∑α  += stat.acceptance_rate
-        n_α += 1
-        ℓr  += ℓρₜ - ℓρₜ′
-    end
-    ℓπ′  = logdensity(model, θ)
-    ℓr += ℓπ′ + ϕ_k′tok(θ)
-    𝔼α  = ∑α/n_α
-    θ, ℓr, ℓπ′, (acceptance_rate=𝔼α,)
+    ℓπ = prev.lp
+    θ  = prev.param
+    k  = prev.order
+
+    k  = prev.order
+    k′  = k + 1
+    j  = rand(rng, DiscreteUniform(1, k + 1))
+
+    newborn = local_proposal_sample(rng, model, jump.local_proposal)
+    θ′       = local_insert(model, θ, j, newborn)
+
+    ℓφ′ = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/(k + 1))
+    ℓφ = log(1/k′)
+
+    ℓπ′ = logdensity(model, θ′)
+    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓφ′ - ℓφ)
 end
 
-function proposal_ais_birth(
-    rng::Random.AbstractRNG, θ, model, ℓπ::Real, T::Int, kernel
+function propose_jump(
+    rng  ::Random.AbstractRNG,
+         ::Death,
+    jump ::IndepJumpProposal,
+    prev ::RJState,
+         ::Any,
+    model
+)
+    #= 
+        Independent Death Proposal
+
+        Peter J. Green
+        "Reversible jump Markov chain Monte Carlo computation and Bayesian model determination"
+        Biometrika, 1995.
+    =##
+    ℓπ = prev.lp
+    θ  = prev.param
+    k  = prev.order
+
+    k′  = k - 1
+    j  = rand(rng, DiscreteUniform(1, k))
+
+    θ′, _ = local_deleteat(model, θ, j)
+
+    ℓφ′ = log(1/k)
+    ℓφ = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/(k′ + 1))
+
+    ℓπ′ = logdensity(model, θ′)
+    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓφ′ - ℓφ)
+end
+
+function propose_jump(
+    rng     ::Random.AbstractRNG,
+            ::Birth,
+    proposal::AnnealedJumpProposal,
+    prev    ::RJState,
+    mcmc,
+    model,
 )
     #=
         Annealed Importance Sampling Birth Proposal
@@ -48,37 +81,52 @@ function proposal_ais_birth(
         "Annealed Importance Sampling Reversible Jump MCMC Algorithms"
         in Journal of Computational and Graphical Statistics, 2013.
     =##
+    ℓπ = prev.lp
+    θ  = prev.param
+    k  = prev.order
 
-    k  = model_order(model, θ)
-    θⱼ = local_proposal_sample(rng, model)
-    j  = rand(rng, DiscreteUniform(1, k+1))
-    θ′ = local_insert(θ, j, θⱼ)
-    k′ = model_order(model, θ′)
+    k′ = k + 1
+    j  = rand(rng, DiscreteUniform(1, k + 1))
 
-    G⁻¹(θ_)    = local_deleteat(θ_, j)
-    ϕktok′(θ_) = local_proposal_logpdf(model, θ_, j) + log(1/(k + 1))
+    newborn = local_proposal_sample(rng, model, proposal.local_proposal)
+    θ′       = local_insert(model, θ, j, newborn)
+
+    G⁻¹(θ_)    = local_deleteat(model, θ_, j)
+    ϕktok′(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/(k + 1))
     ϕk′tok(θ_) = log(1/k′)
-    proposal_ais(rng, θ′, model, ℓπ, G⁻¹, ϕktok′, ϕk′tok, T, kernel)
+
+    θ, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
+    RJState(θ, ℓπ′, k′, stat), ℓr
 end
 
-function proposal_ais_death(rng::Random.AbstractRNG, θ, model, ℓπ, T, kernel)
+function propose_jump(
+    rng     ::Random.AbstractRNG,
+            ::Death,
+    proposal::AnnealedJumpProposal,
+    prev    ::RJState,
+    mcmc,
+    model,
+)
     #=
         Annealed Importance Sampling Death Proposal 
 
         G. Karagiannis, C. Andrieu, 
-        "Annealed Importance Sampling Reversible Jump MCMC Algorithms"
+        "Annealed Importance Sampling Reversible proposal MCMC Algorithms"
         in Journal of Computational and Graphical Statistics, 2013.
     =##
+    ℓπ = prev.lp
+    θ  = prev.param
+    k  = prev.order
 
-    k  = model_order(model, θ)
-    j  = rand(rng, DiscreteUniform(1, k))
-    θⱼ = getlocalindex(θ, j)
-    θ′  = local_deleteat(θ, j)
-    k′  = k - 1
+    k     = model_order(model, θ)
+    j     = rand(rng, DiscreteUniform(1, k))
+    θ′, θⱼ = local_deleteat(model, θ, j)
+    k′     = k - 1
 
-    G⁻¹(θ_)   = local_insert(θ_, j, θⱼ)
+    G⁻¹(θ_)   = local_insert(model, θ_, j, θⱼ)
     ϕktok′(θ_) = log(1/k)
-    ϕk′tok(θ_) = local_proposal_logpdf(model, θ, j) + log(1/(k′ + 1))
-    proposal_ais(rng, θ′, model, ℓπ, G⁻¹, ϕktok′, ϕk′tok, T, kernel)
-end
+    ϕk′tok(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ, j) + log(1/(k′ + 1))
 
+    θ, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
+    RJState(θ, ℓπ′, k′, stat), ℓr
+end

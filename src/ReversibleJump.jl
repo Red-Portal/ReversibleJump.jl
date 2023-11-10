@@ -10,6 +10,7 @@ export
     logdensity,
     Birth,
     Death,
+    IndepJumpProposal,
     AnnealedJumpProposal,
     GeometricPath,
     ArithmeticPath
@@ -29,7 +30,8 @@ function local_deleteat        end
 function logdensity            end
 function model_order           end
 function propose_jump          end
-function mcmc_step             end
+function step_mcmc             end
+function step_jump             end
 
 abstract type AbstractSampler end
 
@@ -39,18 +41,19 @@ struct RJState{Param, NT <: NamedTuple}
     param::Param
     lp   ::Real
     order::Int
-    stat ::NT
+    stats::NT
 end
 
-abstract type AbstractMove end
+abstract type AbstractJumpMove end
 
-struct Update <: AbstractMove end
-struct Birth  <: AbstractMove end
-struct Death  <: AbstractMove end
+struct IndepJumpProposal{Prop} <: AbstractJumpProposal
+    local_proposal::Prop
+end
 
 include("utils.jl")
-include("proposal_ais.jl")
-include("proposal_indep.jl")
+include("ais.jl")
+include("birthdeath.jl")
+include("jump.jl")
 
 #include("jump_move.jl")
 #include("rjmcmc.jl")

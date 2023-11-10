@@ -47,7 +47,7 @@ function logdensity(annealed::AnnealedTarget, θ)
     anneal(path, ℓρ_T, ℓρ_0, t, T)
 end
 
-function propose_ais(
+function step_ais(
     rng   ::Random.AbstractRNG,
     jump  ::AnnealedJumpProposal,
     mcmc,
@@ -78,76 +78,11 @@ function propose_ais(
         if !isfinite(ℓρₜ)
             break
         end
-        θ, ℓρₜ′ = mcmc_step(rng, mcmc, target_annealed, θ)
+        θ, ℓρₜ′ = step_mcmc(rng, mcmc, target_annealed, θ)
         ℓr    += ℓρₜ - ℓρₜ′
     end
     ℓπ′  = logdensity(model, θ)
     ℓr += ℓπ′ + ϕ_k′tok(θ)
     θ, ℓπ′, ℓr, NamedTuple()
-end
-
-function propose_jump(
-    rng     ::Random.AbstractRNG,
-            ::Birth,
-    proposal::AnnealedJumpProposal,
-    prev    ::RJState,
-    mcmc,
-    model,
-)
-    #=
-        Annealed Importance Sampling Birth Proposal
-
-        G. Karagiannis, C. Andrieu, 
-        "Annealed Importance Sampling Reversible Jump MCMC Algorithms"
-        in Journal of Computational and Graphical Statistics, 2013.
-    =##
-    ℓπ = prev.lp
-    θ  = prev.param
-    k  = prev.order
-
-    k′ = k + 1
-    j  = rand(rng, DiscreteUniform(1, k + 1))
-
-    newborn = local_proposal_sample(rng, model, proposal.local_proposal)
-    θ′       = local_insert(model, θ, j, newborn)
-
-    G⁻¹(θ_)    = local_deleteat(model, θ_, j)
-    ϕktok′(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/(k + 1))
-    ϕk′tok(θ_) = log(1/k′)
-
-    θ, ℓπ′, ℓr, stat = propose_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    RJState(θ, ℓπ′, k′, stat), ℓr
-end
-
-function propose_jump(
-    rng     ::Random.AbstractRNG,
-            ::Death,
-    proposal::AnnealedJumpProposal,
-    prev    ::RJState,
-    mcmc,
-    model,
-)
-    #=
-        Annealed Importance Sampling Death Proposal 
-
-        G. Karagiannis, C. Andrieu, 
-        "Annealed Importance Sampling Reversible proposal MCMC Algorithms"
-        in Journal of Computational and Graphical Statistics, 2013.
-    =##
-    ℓπ = prev.lp
-    θ  = prev.param
-    k  = prev.order
-
-    k     = model_order(model, θ)
-    j     = rand(rng, DiscreteUniform(1, k))
-    θ′, θⱼ = local_deleteat(model, θ, j)
-    k′     = k - 1
-
-    G⁻¹(θ_)   = local_insert(model, θ_, j, θⱼ)
-    ϕktok′(θ_) = log(1/k)
-    ϕk′tok(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ, j) + log(1/(k′ + 1))
-
-    θ, ℓπ′, ℓr, stat = propose_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    RJState(θ, ℓπ′, k′, stat), ℓr
 end
 

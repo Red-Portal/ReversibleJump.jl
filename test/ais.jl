@@ -1,5 +1,5 @@
 
-@testset "aisproposals" begin
+@testset "proposal_ais" begin
     rng   = Random.default_rng()
     model = CategoricalModelSpace(Categorical([0.2, 0.8]), -30)
     prop  = ConstantLocalProposal()
@@ -9,6 +9,7 @@
         mcmc  = IdentityKernel()
 
         @testset "birth" begin
+            rng    = Random.default_rng()
             θ_init = Float64[]
             state  = ReversibleJump.RJState(
                 θ_init, logdensity(model, θ_init), 0, NamedTuple()
@@ -23,6 +24,7 @@
         end
 
         @testset "death" begin
+            rng    = Random.default_rng()
             θ_init = [1.0]
             state  = ReversibleJump.RJState(
                 θ_init, logdensity(model, θ_init), 1, NamedTuple()
