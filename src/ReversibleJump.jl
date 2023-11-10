@@ -6,6 +6,7 @@ export
     local_proposal_logpdf,
     local_insert,
     local_deleteat,
+    transition_mcmc,
     model_order,
     logdensity,
     Birth,
@@ -30,8 +31,8 @@ function local_deleteat        end
 function logdensity            end
 function model_order           end
 function propose_jump          end
-function step_mcmc             end
-function step_jump             end
+function transition_mcmc       end
+function transition_jump       end
 
 abstract type AbstractSampler end
 

@@ -1,5 +1,5 @@
 
-function step_jump(
+function transition_jump(
     rng     ::Random.AbstractRNG,
     move    ::AbstractJumpMove,
     proposal::AbstractJumpProposal,

@@ -47,6 +47,6 @@ end
 
 struct IdentityKernel <: AbstractMCMC.AbstractSampler end
 
-function ReversibleJump.step_mcmc(::Random.AbstractRNG, ::IdentityKernel, model, θ)
+function ReversibleJump.transition_mcmc(::Random.AbstractRNG, ::IdentityKernel, model, θ)
     copy(θ), ReversibleJump.logdensity(model, θ)
 end

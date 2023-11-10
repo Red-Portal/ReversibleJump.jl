@@ -78,7 +78,7 @@ function step_ais(
         if !isfinite(ℓρₜ)
             break
         end
-        θ, ℓρₜ′ = step_mcmc(rng, mcmc, target_annealed, θ)
+        θ, ℓρₜ′ = transition_mcmc(rng, mcmc, target_annealed, θ)
         ℓr    += ℓρₜ - ℓρₜ′
     end
     ℓπ′  = logdensity(model, θ)
