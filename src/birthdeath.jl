@@ -1,6 +1,9 @@
 
-struct Birth  <: AbstractJumpMove end
-struct Death  <: AbstractJumpMove end
+struct Birth      <: AbstractJumpMove     end
+struct Death      <: AbstractJumpMove     end
+
+Base.show(io::IO, ::Birth) = print(io, "birth")
+Base.show(io::IO, ::Death) = print(io, "death")
 
 function propose_jump(
     rng  ::Random.AbstractRNG,
@@ -91,7 +94,7 @@ function propose_jump(
     newborn = local_proposal_sample(rng, model, proposal.local_proposal)
     θ′       = local_insert(model, θ, j, newborn)
 
-    G⁻¹(θ_)    = local_deleteat(model, θ_, j)
+    G⁻¹(θ_)    = first(local_deleteat(model, θ_, j))
     ϕktok′(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/(k + 1))
     ϕk′tok(θ_) = log(1/k′)
 
