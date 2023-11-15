@@ -73,7 +73,6 @@ function step_ais(
     target = AnnealedTarget(model, 0, T, G⁻¹, ϕ_ktok′, ϕ_k′tok, path)
     for t = 1:T-1
         target_annealed = @set target.t = t
-
         ℓρₜ = logdensity(target_annealed, θ)
         if !isfinite(ℓρₜ)
             break

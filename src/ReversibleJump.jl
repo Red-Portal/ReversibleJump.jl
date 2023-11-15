@@ -7,15 +7,16 @@ export
     local_insert,
     local_deleteat,
     transition_mcmc,
-    model_order,
     logdensity,
-    Birth,
-    Death,
+    BirthDeath,
     IndepJumpProposal,
     AnnealedJumpProposal,
     GeometricPath,
-    ArithmeticPath
+    ArithmeticPath,
+    ReversibleJumpMCMC,
+    NonReversibleJumpMCMC
 
+using AbstractMCMC
 using Accessors
 using Distributions
 using LogExpFunctions
@@ -23,13 +24,13 @@ using OnlineStats
 using ProgressMeter
 using Random
 using SimpleUnPack
+using StatsBase
 
 function local_proposal_sample end
 function local_proposal_logpdf end
 function local_insert          end
 function local_deleteat        end
 function logdensity            end
-function model_order           end
 function propose_jump          end
 function transition_mcmc       end
 function transition_jump       end
@@ -45,7 +46,13 @@ struct RJState{Param, NT <: NamedTuple}
     stats::NT
 end
 
-abstract type AbstractJumpMove end
+struct NRJState{Param <: RJState}
+    direction::Bool
+    param    ::Param
+end
+
+abstract type AbstractJumpMove     end
+abstract type AbstractJumpMovePair end
 
 struct IndepJumpProposal{Prop} <: AbstractJumpProposal
     local_proposal::Prop
@@ -55,10 +62,9 @@ include("utils.jl")
 include("ais.jl")
 include("birthdeath.jl")
 include("jump.jl")
+include("rjmcmc.jl")
+include("nrjmcmc.jl")
 
-#include("jump_move.jl")
-#include("rjmcmc.jl")
-#include("nrjmcmc.jl")
 #include("sample.jl")
 
 end

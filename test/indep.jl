@@ -12,7 +12,7 @@
             θ_init, logdensity(model, θ_init), 0, NamedTuple()
         )
 
-        state′, ℓr = ReversibleJump.propose_jump(rng, Birth(), jump, state, mcmc, model)
+        state′, ℓr = ReversibleJump.propose_jump(rng, ReversibleJump.Birth(), jump, state, mcmc, model)
 
         logratio_true = logdensity(model, state′.param) - logdensity(model, θ_init) 
         @test ℓr          ≈ logratio_true
@@ -27,7 +27,7 @@
             θ_init, logdensity(model, θ_init), 1, NamedTuple()
         )
 
-        state′, ℓr = ReversibleJump.propose_jump(rng, Death(), jump, state, mcmc, model)
+        state′, ℓr = ReversibleJump.propose_jump(rng, ReversibleJump.Death(), jump, state, mcmc, model)
         
         logratio_true = logdensity(model, state′.param) - logdensity(model, θ_init) 
         @test ℓr          ≈ logratio_true

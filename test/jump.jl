@@ -9,7 +9,7 @@
     @testset for jump_proposal = [AnnealedJumpProposal(4, prop, GeometricPath()),
                                   IndepJumpProposal(prop)]
         @testset "birth" begin
-            move   = Birth()
+            move   = ReversibleJump.Birth()
             rng    = Random.default_rng()
             model  = CategoricalModelSpace(Categorical([0.8, 0.2]), -30)
             θ_init = Float64[]
@@ -28,7 +28,7 @@
         end
 
         @testset "death" begin
-            move   = Death()
+            move   = ReversibleJump.Death()
             rng    = Random.default_rng()
             model  = CategoricalModelSpace(Categorical([0.2, 0.8]), -30)
             θ_init = [1.0]

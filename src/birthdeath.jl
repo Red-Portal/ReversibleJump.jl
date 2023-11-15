@@ -1,6 +1,10 @@
 
 struct Birth      <: AbstractJumpMove     end
 struct Death      <: AbstractJumpMove     end
+struct BirthDeath <: AbstractJumpMovePair end
+
+forward_move( ::BirthDeath, k) = (Birth(), k+1)
+backward_move(::BirthDeath, k) = (Death(), k-1)
 
 Base.show(io::IO, ::Birth) = print(io, "birth")
 Base.show(io::IO, ::Death) = print(io, "death")
@@ -23,19 +27,17 @@ function propose_jump(
     ℓπ = prev.lp
     θ  = prev.param
     k  = prev.order
-
-    k  = prev.order
     k′  = k + 1
-    j  = rand(rng, DiscreteUniform(1, k + 1))
 
+    j       = rand(rng, DiscreteUniform(1, k + 1))
     newborn = local_proposal_sample(rng, model, jump.local_proposal)
     θ′       = local_insert(model, θ, j, newborn)
 
-    ℓφ′ = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/(k + 1))
-    ℓφ = log(1/k′)
+    ℓqktok′ = local_proposal_logpdf(model, jump.local_proposal, θ′, j) + log(1/k′)
+    ℓqk′tok = log(1/k′)
 
     ℓπ′ = logdensity(model, θ′)
-    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓφ′ - ℓφ)
+    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
 end
 
 function propose_jump(
@@ -62,11 +64,11 @@ function propose_jump(
 
     θ′, _ = local_deleteat(model, θ, j)
 
-    ℓφ′ = log(1/k)
-    ℓφ = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/(k′ + 1))
+    ℓqktok′ = log(1/k)
+    ℓqk′tok = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/k)
 
     ℓπ′ = logdensity(model, θ′)
-    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓφ′ - ℓφ)
+    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
 end
 
 function propose_jump(
