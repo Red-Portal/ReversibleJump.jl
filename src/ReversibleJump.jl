@@ -14,7 +14,8 @@ export
     GeometricPath,
     ArithmeticPath,
     ReversibleJumpMCMC,
-    NonReversibleJumpMCMC
+    NonReversibleJumpMCMC,
+    sample
 
 using AbstractMCMC
 using Accessors
@@ -35,7 +36,7 @@ function propose_jump          end
 function transition_mcmc       end
 function transition_jump       end
 
-abstract type AbstractSampler end
+abstract type AbstractRJMCMCSampler end
 
 abstract type AbstractJumpProposal end
 
@@ -69,7 +70,6 @@ include("birthdeath.jl")
 include("jump.jl")
 include("rjmcmc.jl")
 include("nrjmcmc.jl")
-
-#include("sample.jl")
+include("sample.jl")
 
 end

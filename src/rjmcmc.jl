@@ -5,7 +5,7 @@ struct ReversibleJumpMCMC{
     MoveWeight <: StatsBase.AbstractWeights,
     MoveKern,
     MCMCKern,
-}
+} <: AbstractRJMCMCSampler
     jump_proposal::JumpProp
     move_pairs   ::MovePairs
     move_weights ::MoveWeight
@@ -18,7 +18,7 @@ function ReversibleJumpMCMC(
     jump_proposal::AbstractJumpProposal,
     mcmc_kernel,
     move_pairs   ::AbstractVector{<:AbstractJumpMovePair} = [BirthDeath()],
-    move_weights ::StatsBase.AbstractWeights              = pweights(fill(1.0, length(move_pairs))),
+    move_weights ::StatsBase.AbstractWeights              = pweights(fill(1.0, length(move_pairs)));
     jump_rate    ::Real                                   = 0.5, 
 )
     @assert length(move_weights) == length(move_pairs)
@@ -66,7 +66,7 @@ function AbstractMCMC.step(
 )
     @unpack jump_proposal, move_pairs, move_weights, order_kernel, mcmc_kernel = sampler
 
-    move_pair       = sample(rng, move_pairs, move_weights)
+    move_pair       = StatsBase.sample(rng, move_pairs, move_weights)
     k               = prev.order
     move_fwd, k_fwd = forward_move(move_pair, k)
     move_bwd, k_bwd = backward_move(move_pair, k)
