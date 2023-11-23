@@ -3,7 +3,7 @@ function transition_jump(
     rng     ::Random.AbstractRNG,
     move    ::AbstractJumpMove,
     proposal::AbstractJumpProposal,
-    prev    ::RJState,
+    prev    ::AbstractRJState,
     mcmc,
     model,
     order_kernel,

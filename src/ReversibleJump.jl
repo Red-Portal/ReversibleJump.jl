@@ -39,16 +39,21 @@ abstract type AbstractSampler end
 
 abstract type AbstractJumpProposal end
 
-struct RJState{Param, NT <: NamedTuple}
+abstract type AbstractRJState end
+
+struct RJState{Param, NT <: NamedTuple} <: AbstractRJState
     param::Param
     lp   ::Real
     order::Int
     stats::NT
 end
 
-struct NRJState{Param <: RJState}
+struct NRJState{Param, NT <: NamedTuple} <: AbstractRJState
     direction::Bool
     param    ::Param
+    lp       ::Real
+    order    ::Int
+    stats    ::NT
 end
 
 abstract type AbstractJumpMove     end

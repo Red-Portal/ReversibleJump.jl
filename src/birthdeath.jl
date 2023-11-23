@@ -13,7 +13,7 @@ function propose_jump(
     rng  ::Random.AbstractRNG,
          ::Birth,
     jump ::IndepJumpProposal,
-    prev ::RJState,
+    prev ::AbstractRJState,
          ::Any,
     model,
 )
@@ -36,15 +36,19 @@ function propose_jump(
     ℓqktok′ = local_proposal_logpdf(model, jump.local_proposal, θ′, j) + log(1/k′)
     ℓqk′tok = log(1/k′)
 
-    ℓπ′ = logdensity(model, θ′)
-    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
+    ℓπ′  = logdensity(model, θ′)
+    prop = setproperties(prev, (param = θ′,
+                                lp    = ℓπ′,
+                                order = k′,
+                                stats = NamedTuple()))
+    prop, (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
 end
 
 function propose_jump(
     rng  ::Random.AbstractRNG,
          ::Death,
     jump ::IndepJumpProposal,
-    prev ::RJState,
+    prev ::AbstractRJState,
          ::Any,
     model
 )
@@ -68,14 +72,18 @@ function propose_jump(
     ℓqk′tok = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/k)
 
     ℓπ′ = logdensity(model, θ′)
-    RJState(θ′, ℓπ′, k′, NamedTuple()), (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
+    prop = setproperties(prev, (param = θ′,
+                                lp    = ℓπ′,
+                                order = k′,
+                                stats = NamedTuple()))
+    prop, (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
 end
 
 function propose_jump(
     rng     ::Random.AbstractRNG,
             ::Birth,
     proposal::AnnealedJumpProposal,
-    prev    ::RJState,
+    prev    ::AbstractRJState,
     mcmc,
     model,
 )
@@ -100,15 +108,19 @@ function propose_jump(
     ϕktok′(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/(k + 1))
     ϕk′tok(θ_) = log(1/k′)
 
-    θ, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    RJState(θ, ℓπ′, k′, stat), ℓr
+    θ′, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
+    prop = setproperties(prev, (param = θ′,
+                                lp    = ℓπ′,
+                                order = k′,
+                                stats = stat))
+    prop, ℓr
 end
 
 function propose_jump(
     rng     ::Random.AbstractRNG,
             ::Death,
     proposal::AnnealedJumpProposal,
-    prev    ::RJState,
+    prev    ::AbstractRJState,
     mcmc,
     model,
 )
@@ -123,7 +135,6 @@ function propose_jump(
     θ  = prev.param
     k  = prev.order
 
-    k     = model_order(model, θ)
     j     = rand(rng, DiscreteUniform(1, k))
     θ′, θⱼ = local_deleteat(model, θ, j)
     k′     = k - 1
@@ -132,6 +143,10 @@ function propose_jump(
     ϕktok′(θ_) = log(1/k)
     ϕk′tok(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ, j) + log(1/(k′ + 1))
 
-    θ, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    RJState(θ, ℓπ′, k′, stat), ℓr
+    θ′, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
+    prop = setproperties(prev, (param = θ′,
+                                lp    = ℓπ′,
+                                order = k′,
+                                stats = stat))
+    prop, ℓr
 end
