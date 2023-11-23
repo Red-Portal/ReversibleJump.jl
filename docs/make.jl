@@ -5,7 +5,6 @@ DocMeta.setdocmeta!(ReversibleJump, :DocTestSetup, :(using ReversibleJump); recu
 
 makedocs(;
     modules=[ReversibleJump],
-    authors="Ray Kim <msca8h@naver.com> and contributors",
     repo="https://github.com/Red-Portal/ReversibleJump.jl/blob/{commit}{path}#{line}",
     sitename="ReversibleJump.jl",
     format=Documenter.HTML(;
@@ -15,7 +14,8 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home" => "index.md",
+        "Home"       => "index.md",
+        "Benchmarks" => "benchmarks.md"
     ],
 )
 
