@@ -21,19 +21,23 @@ end
     model  = DiscreteModel(Poisson(4))
 
     n_anneal = 8
-    path     = ArithmeticPath()
     prop     = ConstantLocalProposal()
     mcmc     = IdentityKernel()
-    jump     = AnnealedJumpProposal(n_anneal, prop, path)
-    nrjmcmc  = ReversibleJump.NonReversibleJumpMCMC(jump, mcmc)
 
     n_pvalue_samples = 32
     n_samples        = 100
     n_mcmc_steps     = 10
     test             = TwoSampleTest(n_samples, n_samples)
-    subject          = TestSubject(model, NRJMCMCTestSampler(nrjmcmc))
     statistics       = θ -> [length(θ)]
 
-    @test seqmcmctest(rng, test, subject, 0.001, n_pvalue_samples;
-                      statistics, show_progress=false)
+    @testset for jump in [
+        AnnealedJumpProposal(n_anneal, prop, ArithmeticPath()),
+        AnnealedJumpProposal(n_anneal, prop, GeometricPath()),
+        IndepJumpProposal(prop)
+    ]
+        nrjmcmc = ReversibleJump.NonReversibleJumpMCMC(jump, mcmc)
+        subject = TestSubject(model, NRJMCMCTestSampler(nrjmcmc))
+        @test seqmcmctest(rng, test, subject, 0.001, n_pvalue_samples;
+                          statistics, show_progress=false)
+    end
 end

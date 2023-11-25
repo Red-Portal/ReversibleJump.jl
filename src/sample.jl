@@ -30,7 +30,8 @@ function sample(
         end
 
         if !isnothing(callback)
-            callback(param)
+            stats′ = callback(param, stats)
+            stats = merge(stats, stats′)
         end
 
         if show_progress
