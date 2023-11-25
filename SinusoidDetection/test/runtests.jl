@@ -29,7 +29,7 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidModel)
     δ² = delta*delta
 
     D   = SinusoidDetection.spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + eps(Float64)*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
     ω, y
 end
@@ -44,10 +44,11 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidFixedO
     δ² = delta*delta
 
     D   = SinusoidDetection.spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + eps(Float64)*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
     ω, y
 end
 
+include("slice.jl")
 include("imhrwmh.jl")
 include("rjmcmc.jl")

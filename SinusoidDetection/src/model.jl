@@ -119,3 +119,7 @@ function ReversibleJump.transition_mcmc(rng::Random.AbstractRNG, mcmc::IMHRWMHSi
     end
     θ, logdensity(model, θ)
 end
+
+ReversibleJump.transition_mcmc(
+    rng::Random.AbstractRNG, mcmc::AbstractSliceSampling, model, θ
+) = slice_sampling(rng, mcmc, model, θ)

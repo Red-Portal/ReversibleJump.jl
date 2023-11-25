@@ -1,12 +1,7 @@
 
-struct RJMCMCTestSampler{RJMCMC <: ReversibleJumpMCMC}
-    rjmcmc::RJMCMC
-end
-
 function MCMCTesting.markovchain_transition(
-    rng::Random.AbstractRNG, model::SinusoidModel, sampler::RJMCMCTestSampler, θ, y
+    rng::Random.AbstractRNG, model::SinusoidModel, rjmcmc::ReversibleJumpMCMC, θ, y
 )
-    rjmcmc = sampler.rjmcmc
     model  = @set model.y = y
     _, init_state = AbstractMCMC.step(
         rng, model, rjmcmc; initial_params=θ, initial_order=length(θ)
@@ -41,7 +36,7 @@ end
     statistics       = θ -> [length(θ)]
 
     rjmcmc  = ReversibleJump.ReversibleJumpMCMC(prior, jump, mcmc)
-    subject = TestSubject(model, RJMCMCTestSampler(rjmcmc))
+    subject = TestSubject(model, rjmcmc)
     @test seqmcmctest(test, subject, 0.001, n_pvalue_samples;
                       statistics, show_progress=true)
 end

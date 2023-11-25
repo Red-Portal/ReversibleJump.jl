@@ -1,191 +1,233 @@
 
-# function slice_doubling(ℓπ, 
-#                         ℓy::Real,
-#                         θ₀::Real,
-#                         w::Real,
-#                         supp::RealInterval; 
-#                         rrng=Random.GLOBAL_PRNG)
-#     #=
-#         Doubling out procedure for finding a slice
-#         (An acceptance rate < 1e-4 is treated as a potential infinite loop)
+abstract type AbstractSliceSampling end
 
-#         Radford M. Neal,  
-#         "Slice Sampling," 
-#         Annals of Statistics, 2003.
-#     =##
+struct SliceDoublingOut{F <: Real} <: AbstractSliceSampling
+    max_doubling_out::Int
+    window          ::F
+end
 
-#     u     = rand(prng)
-#     L     = θ₀ - w*u
-#     R     = L + w
-#     L_min = minimum(supp)
-#     R_max = maximum(supp)
-#     p     = 8
+SliceDoublingOut(window::Real) = SliceDoublingOut(8, window)
 
-#     ℓπ_L = ℓπ(L)
-#     ℓπ_R = ℓπ(R)
-#     K    = 2
+struct SliceSteppingOut{F <: Real} <: AbstractSliceSampling
+    max_stepping_out::Int
+    window          ::F
+end
 
-#     for _ = 1:p
-#         if ((ℓy ≥ ℓπ_L) && (ℓy ≥ ℓπ_R))
-#             break
-#         end
-#         v = rand(prng)
-#         if v < 0.5
-#             L    = max(L - (R - L), L_min)
-#             ℓπ_L = ℓπ(L)
-#         else
-#             R    = min(R + (R - L), R_max)
-#             ℓπ_R = ℓπ(R)
-#         end
-#         K += 1
-#     end
-#     L, R, K
-# end
+SliceSteppingOut(window::Real) = SliceSteppingOut(32, window)
 
-# function slice_stepout(ℓπ  ::Function, 
-#                        ℓy  ::T,
-#                        θ₀  ::T,
-#                        w   ::T,
-#                        supp::RealInterval; 
-#                        prng::Random.AbstractRNG = Random.GLOBAL_PRNG) where {T <: Real}
-#     #=
-#         Stepping out procedure for finding a slice
-#         (An acceptance rate < 1e-4 is treated as a potential infinite loop)
+struct Slice{F <: Real} <: AbstractSliceSampling
+    window::F
+end
 
-#         Radford M. Neal,  
-#         "Slice Sampling," 
-#         Annals of Statistics, 2003.
-#     =##
+function find_interval(
+    rng::Random.AbstractRNG,
+    alg::Slice,
+       ::GibbsObjective,
+       ::Real,
+    θ₀ ::Real,
+)
+    w = alg.window
+    u = rand(rng)
+    L = θ₀ - w*u
+    R = L + w
+    L, R, 0
+end
 
-#     m      = 32
-#     u      = rand(prng)
-#     L      = θ₀ - w*u
-#     R      = L + w
-#     L_min  = minimum(supp)
-#     R_max  = maximum(supp)
-#     V      = rand(prng)
-#     J      = floor(m*V)
-#     K      = (m - 1) - J 
-#     n_eval = 0
+function find_interval(
+    rng  ::Random.AbstractRNG,
+    alg  ::SliceDoublingOut,
+    model::GibbsObjective,
+    ℓy   ::Real,
+    θ₀   ::Real,
+)
+    #=
+        Doubling out procedure for finding a slice
+        (An acceptance rate < 1e-4 is treated as a potential infinite loop)
 
-#     while J > 0 && L > L_min && ℓy < ℓπ(L)
-#         L = L - w
-#         J = J - 1
-#         n_eval += 1
-#     end
+        Radford M. Neal,  
+        "Slice Sampling," 
+        Annals of Statistics, 2003.
+    =##
+    w = alg.window
+    p = alg.max_doubling_out
 
-#     while K > 0 && R < R_max && ℓy < ℓπ(R)
-#         R = R + w
-#         K = K - 1
-#         n_eval += 1
-#     end
-#     L, R, n_eval
-# end
+    u = rand(rng)
+    L = θ₀ - w*u
+    R = L + w
 
-# function slice_double_accept(ℓπ::Function, 
-#                              ℓy::T,
-#                              θ₀::T, 
-#                              θ₁::T, 
-#                              L::T, 
-#                              R::T, 
-#                              w::T) where {T <: Real} 
-#     #=
-#         acceptance rule for the doubling procedure
+    ℓπ_L = logdensity(model, L)
+    ℓπ_R = logdensity(model, R)
+    K    = 2
 
-#         Radford M. Neal,  
-#         "Slice Sampling," 
-#         Annals of Statistics, 2003.
-#     =##
-#     D    = false
-#     ℓπ_L = ℓπ(L)
-#     ℓπ_R = ℓπ(R)
+    for _ = 1:p
+        if ((ℓy ≥ ℓπ_L) && (ℓy ≥ ℓπ_R))
+            break
+        end
+        v = rand(rng)
+        if v < 0.5
+            L    = L - (R - L)
+            ℓπ_L = logdensity(model, L)
+        else
+            R    = R + (R - L)
+            ℓπ_R = logdensity(model, R)
+        end
+        K += 1
+    end
+    L, R, K
+end
 
-#     while R - L > 1.1*w
-#         M = (L + R)/2
-#         if (θ₀ < M && θ₁ ≥ M) || (θ₀ ≥ M && θ₁ < M)
-#             D = true
-#         end
+function find_interval(
+    rng  ::Random.AbstractRNG,
+    alg  ::SliceSteppingOut,
+    model::GibbsObjective,
+    ℓy   ::Real,
+    θ₀   ::Real,
+    )
+    #=
+        Stepping out procedure for finding a slice
+        (An acceptance rate < 1e-4 is treated as a potential infinite loop)
 
-#         if θ₁ < M
-#             R    = M
-#             ℓπ_R = ℓπ(R)::T
-#         else
-#             L    = M
-#             ℓπ_L = ℓπ(L)::T
-#         end
+        Radford M. Neal,  
+        "Slice Sampling," 
+        Annals of Statistics, 2003.
+    =##
+    w = alg.window
+    m = alg.max_stepping_out
 
-#         if D && ℓy ≥ ℓπ_L && ℓy ≥ ℓπ_R
-#             return false
-#         end
-#     end
-#     true
-# end
+    u      = rand(rng)
+    L      = θ₀ - w*u
+    R      = L + w
+    V      = rand(rng)
+    J      = floor(m*V)
+    K      = (m - 1) - J 
+    n_eval = 0
 
-# function slice_sampling_univariate(
-#     ℓπ  ::Function, 
-#     θ₀  ::T,
-#     ℓπ₀ ::T, 
-#     w   ::T,
-#     supp::RealInterval{T}; 
-#     prng::Random.AbstractRNG = Random.GLOBAL_PRNG) where {T <: Real}
-#     #=
-#         Univariate slice sampling kernel
-#         (An acceptance rate < 1e-4 is treated as a potential infinite loop)
+    while J > 0 && ℓy < logdensity(model, L)
+        L = L - w
+        J = J - 1
+        n_eval += 1
+    end
+    while K > 0 && ℓy < logdensity(model, R)
+        R = R + w
+        K = K - 1
+        n_eval += 1
+    end
+    L, R, n_eval
+end
 
-#         Radford M. Neal,  
-#         "Slice Sampling," 
-#         Annals of Statistics, 2003.
-#     =##
-#     u  = rand(prng)
-#     ℓy = log(u) + ℓπ₀
+accept_slice_proposal(
+    ::AbstractSliceSampling,
+    ::GibbsObjective,
+    ::Real,
+    ::Real,
+    ::Real,
+    ::Real,
+    ::Real,
+) = true
 
-#     #L, R, n_prop = slice_doubling(ℓπ, ℓy, θ₀, w, supp; prng=prng)
-#     L, R, n_prop = slice_stepout(ℓπ, ℓy, θ₀, w, supp; prng=prng)
+function accept_slice_proposal(
+    alg  ::SliceDoublingOut,
+    model::GibbsObjective,
+    ℓy   ::Real,
+    θ₀   ::Real,
+    θ₁   ::Real,
+    L    ::Real,
+    R    ::Real,
+) 
+    #=
+        acceptance rule for the doubling procedure
 
-#     while true
-#         U       = rand(prng)
-#         θ′      = L + U*(R - L)
-#         ℓπ′     = ℓπ(θ′)::T
-#         n_prop += 1
-#         if (ℓy < ℓπ′) #&& slice_double_accept(ℓπ, ℓy, θ₀, θ′, L, R, w)
-#             return θ′, ℓπ′, 1/n_prop
-#         end
+        Radford M. Neal,  
+        "Slice Sampling," 
+        Annals of Statistics, 2003.
+    =##
+    w    = alg.window
+    D    = false
+    ℓπ_L = logdensity(model, L)
+    ℓπ_R = logdensity(model, R)
 
-#         if θ′ < θ₀
-#             L = θ′
-#         else
-#             R = θ′
-#         end
+    while R - L > 1.1*w
+        M = (L + R)/2
+        if (θ₀ < M && θ₁ ≥ M) || (θ₀ ≥ M && θ₁ < M)
+            D = true
+        end
 
-#         if n_prop > 10000
-#             @error("Too many rejections. Something looks broken. \n θ = $(θ₀) \n ℓπ = $(ℓπ₀)")
-#             throw()
-#         end
-#     end
-# end
+        if θ₁ < M
+            R    = M
+            ℓπ_R = logdensity(model, R)
+        else
+            L    = M
+            ℓπ_L = logdensity(model, L)
+        end
 
-# function slice_sampling(target::Function, 
-#                         θ     ::Vector{T},
-#                         ℓp    ::T,
-#                         w     ::T,
-#                         supp  ::RealInterval{T};
-#                         prng  ::Random.AbstractRNG = Random.GLOBAL_PRNG) where {T <: Real}
-#     #=
-#         Vector-variate slice sampling kernel
-#     =##
+        if D && ℓy ≥ ℓπ_L && ℓy ≥ ℓπ_R
+            return false
+        end
+    end
+    true
+end
 
-#     ∑acc  = 0.0
-#     n_acc = 0
-#     for idx = eachindex(θ)
-#         target_uni(θ′ᵢ::T)::T = target(@set θ[idx] = θ′ᵢ)
-#         θ′ᵢ, ℓp, acc = slice_sampling_univariate(target_uni, θ[idx], ℓp, w, supp; prng)
-#         ∑acc  += acc
-#         n_acc += 1
-#         θ[idx] = θ′ᵢ
-#     end
-#     avg_acc = n_acc > 0 ? ∑acc/n_acc : 1
-#     θ, ℓp, avg_acc
-# end
+function slice_sampling_univariate(
+    rng  ::Random.AbstractRNG,
+    alg  ::AbstractSliceSampling,
+    model::GibbsObjective, 
+    θ₀   ::Real,
+    ℓπ₀  ::Real)
+    #=
+        Univariate slice sampling kernel
+        (An acceptance rate < 1e-4 is treated as a potential infinite loop)
+
+        Radford M. Neal,  
+        "Slice Sampling," 
+        Annals of Statistics, 2003.
+    =##
+    u  = rand(rng)
+    ℓy = log(u) + ℓπ₀
+
+    L, R, n_prop = find_interval(rng, alg, model, ℓy, θ₀)
+
+    while true
+        U      = rand(rng)
+        θ′      = L + U*(R - L)
+        ℓπ′     = logdensity(model, θ′)
+        n_prop += 1
+        if (ℓy < ℓπ′) && accept_slice_proposal(alg, model, ℓy, θ₀, θ′, L, R)
+            return θ′, ℓπ′, 1/n_prop
+        end
+
+        if θ′ < θ₀
+            L = θ′
+        else
+            R = θ′
+        end
+
+        if n_prop > 10000 
+            @error("Too many rejections. Something looks broken. \n θ = $(θ₀) \n ℓπ = $(ℓπ₀)")
+        end
+    end
+end
+
+function slice_sampling(
+    rng      ::Random.AbstractRNG,
+    alg      ::AbstractSliceSampling,
+    model, 
+    θ        ::AbstractVector,
+)
+    ℓp    = logdensity(model, θ)
+    ∑acc  = 0.0
+    n_acc = 0
+    k     = length(θ)
+    idxs  = randperm(rng, k) # the kernel is not reversible without random permutation
+    for idx in idxs
+        model_gibbs = GibbsObjective(model, idx, θ)
+        θ′idx, ℓp, acc = slice_sampling_univariate(rng, alg, model_gibbs, θ[idx], ℓp)
+        ∑acc  += acc
+        n_acc += 1
+        θ[idx] = θ′idx
+    end
+    avg_acc = n_acc > 0 ? ∑acc/n_acc : 1
+    θ, ℓp, avg_acc
+end
 
 # function kernel_slice_gibbs(target::Function, 
 #                             θ     ::DoAParamType,

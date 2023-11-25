@@ -5,7 +5,10 @@ export
     SinusoidModel,
     rand_sinusoids,
     SinusoidUniformLocalProposal,
-    IMHRWMHSinusoid
+    IMHRWMHSinusoid,
+    SliceDoublingOut,
+    SliceSteppingOut,
+    Slice
 
 using AbstractMCMC
 using Accessors
@@ -16,6 +19,12 @@ using PDMats
 using Random
 using ReversibleJump
 using SimpleUnPack
+
+struct GibbsObjective{Model, Idx <: Integer, Vec <: AbstractVector}
+    model::Model
+    idx  ::Idx
+    θ    ::Vec
+end
  
 include("imhrwmh.jl")
 include("slice.jl")

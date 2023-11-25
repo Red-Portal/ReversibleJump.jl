@@ -1,17 +1,13 @@
 
-struct IMHRWMHTestSampler{MCMC <: IMHRWMHSinusoid}
-    mcmc::MCMC
-end
-
 function MCMCTesting.markovchain_transition(
     rng  ::Random.AbstractRNG,
     model::SinusoidFixedOrderModel,
-    mcmc ::IMHRWMHTestSampler,
+    mcmc ::IMHRWMHSinusoid,
     θ, y
 )
     model_base = model.model
     model_base = @set model_base.y = y
-    ReversibleJump.transition_mcmc(rng, mcmc.mcmc, model_base, copy(θ)) |> first
+    ReversibleJump.transition_mcmc(rng, mcmc, model_base, copy(θ)) |> first
 end
 
 @testset "imhrwmh" begin
@@ -33,6 +29,6 @@ end
     test             = ExactRankTest(n_rank_samples, n_mcmc_steps, n_mcmc_thin)
 
     mcmc    = IMHRWMHSinusoid(N)
-    subject = TestSubject(model, IMHRWMHTestSampler(mcmc))
+    subject = TestSubject(model, mcmc)
     @test seqmcmctest(test, subject, 0.001, n_pvalue_samples; show_progress=true)
 end
