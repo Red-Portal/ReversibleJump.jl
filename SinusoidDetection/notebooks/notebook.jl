@@ -12,6 +12,7 @@ end
 
 # ╔═╡ b2ead442-899f-11ee-07a6-433b9c11e97d
 begin
+	using Distributions
 	using Revise
 	using SinusoidDetection
 	using ReversibleJump
@@ -27,14 +28,14 @@ begin
 	rng    = Random.default_rng()
 	nu0    = 10.
 	gamma0 = 10.
-	delta  = 3.
+	delta  = 8.
 	N      = 32
 	model  = SinusoidModel(rng, N, gamma0, nu0, delta)
 end
 
 # ╔═╡ e2a669a7-953a-4eeb-a410-6fe5dd092c50
 begin
-	prior     = model.orderprior
+	prior     = Geometric(0.2)
 	path_arit = ArithmeticPath()
     path_geom = GeometricPath()
 	prop      = SinusoidUniformLocalProposal()
@@ -107,23 +108,23 @@ begin
 end
 
 # ╔═╡ 7453bd71-9e16-4c1b-8fc6-e5a02f93aed8
-traceplot(chain_rjmcmc_ais_arit)
+traceplot(chain_rjmcmc_ais_arit, title="RJMCMC-AIS-Arithmetic")
 
 # ╔═╡ e48e4872-9e22-4214-b213-26402e3ea19e
-traceplot(chain_rjmcmc_ais_geom)
+traceplot(chain_rjmcmc_ais_geom, title="RJMCMC-AIS-Geometric")
 
 # ╔═╡ 45f35f82-e92c-4f1e-9b4f-908eabf3eae5
-traceplot(chain_nrjmcmc_ais_arit)
+traceplot(chain_nrjmcmc_ais_arit, title="NRJMCMC-AIS-Arithmetic")
 
 # ╔═╡ f0a86d89-07fd-4324-92d8-6b0e25c95bc6
-traceplot(chain_nrjmcmc_ais_geom)
+traceplot(chain_nrjmcmc_ais_geom, title="NRJMCMC-AIS-Geometric")
 
 # ╔═╡ 1a19ae1c-0fb1-4d34-b3f5-824f80109926
 begin
 	autocorplot(chain_rjmcmc_ais_arit,   label="RJMCMC-AIS-Arithmetic")
 	autocorplot!(chain_rjmcmc_ais_geom,  label="RJMCMC-AIS-Geometric")
 	autocorplot!(chain_nrjmcmc_ais_arit, label="NRJMCMC-AIS-Arithmetic")
-	autocorplot!(chain_nrjmcmc_ais_geom, label="NRJMCMC-AIS-Geometric")
+	autocorplot!(chain_nrjmcmc_ais_geom, label="NRJMCMC-AIS-Geometric", legend=true)
 end
 
 # ╔═╡ 5a2d138f-1312-4b4c-b270-f87b3215abb2
