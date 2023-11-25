@@ -7,9 +7,12 @@
 
 A package providing reversible jump MCMC algorithms.
 In particular, it provides the following implementations:
-* The original algorithm by Green[^G1995],
+
+* The original algorithm by Green with independent jump proposals[^G1995],
 * the annealed importance sampling jump proposals by Karagiannis and Andrieu[^KA2013], and
 * the non-reversible jump proposals by Gagnon and Doucet[^GD2020].
+
+The exactness of the implementations are tested using the package [MCMCTesting.jl](https://github.com/Red-Portal/MCMCTesting.jl), which implementes the hypothesis-testing approach by Gandy and Scott[^GS2020].
 
 For the types of jump moves, the package currently only provides birth and death.
 But additional moves will also be added in the future.
@@ -22,3 +25,4 @@ It contains a replication of the sinusoid joint estimation and detection model b
 [^KA2013]: Karagiannis, G., & Andrieu, C. (2013). Annealed importance sampling reversible jump MCMC algorithms. Journal of Computational and Graphical Statistics, 22(3), 623-648.
 [^GD2020]: Gagnon, P., & Doucet, A. (2020). Nonreversible jump algorithms for Bayesian nested model selection. Journal of Computational and Graphical Statistics, 30(2), 312-323.
 [^AD1999]: Andrieu, C., & Doucet, A. (1999). Joint Bayesian model selection and estimation of noisy sinusoids via reversible jump MCMC. IEEE Transactions on Signal Processing, 47(10), 2667-2676.
+[^GS2020]: Gandy, Axel, and James Scott. "Unit testing for MCMC and other Monte Carlo methods." arXiv preprint arXiv:2001.06465 (2020).
