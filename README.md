@@ -12,7 +12,7 @@ In particular, it provides the following implementations:
 * the annealed importance sampling jump proposals by Karagiannis and Andrieu[^KA2013], and
 * the non-reversible jump proposals by Gagnon and Doucet[^GD2020].
 
-The exactness of the implementations are tested using the package [MCMCTesting.jl](https://github.com/Red-Portal/MCMCTesting.jl), which implementes the hypothesis-testing approach by Gandy and Scott[^GS2020].
+The exactness of the implementations are tested using the package [MCMCTesting.jl](https://github.com/Red-Portal/MCMCTesting.jl), which implements the hypothesis-testing approach by Gandy and Scott[^GS2020].
 
 For the types of jump moves, the package currently only provides birth and death.
 But additional moves will also be added in the future.
