@@ -18,7 +18,6 @@ But additional moves will also be added in the future.
 An example of using the package is provided in `SinusoidDetection/`.
 It contains a replication of the sinusoid joint estimation and detection model by Andrieu and Doucet [^AD1999].
 
-## References
 [^G1995]: Green, P. J. (1995). Reversible jump Markov chain Monte Carlo computation and Bayesian model determination. Biometrika, 82(4), 711-732.
 [^KA2013]: Karagiannis, G., & Andrieu, C. (2013). Annealed importance sampling reversible jump MCMC algorithms. Journal of Computational and Graphical Statistics, 22(3), 623-648.
 [^GD2020]: Gagnon, P., & Doucet, A. (2020). Nonreversible jump algorithms for Bayesian nested model selection. Journal of Computational and Graphical Statistics, 30(2), 312-323.
