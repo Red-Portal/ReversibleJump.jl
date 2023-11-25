@@ -9,7 +9,7 @@ struct SinusoidModel{
     orderprior::P
 end
 
-function SinusoidModel(
+function rand_sinusoids(
     rng::Random.AbstractRNG, N::Int, gamma0::Real, nu0::Real, delta::Real,
     orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
 )
@@ -22,6 +22,13 @@ function SinusoidModel(
     DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
     SinusoidModel(y, gamma0, nu0, delta, orderprior)
+end
+
+function rand_sinusoids(
+    N::Int, gamma0::Real, nu0::Real, delta::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    rand_sinusoids(Random.default_rng(), N, gamma0, nu0, delta, orderprior)
 end
 
 struct SinusoidUniformLocalProposal end
@@ -91,11 +98,11 @@ function ReversibleJump.local_deleteat(::SinusoidModel, θ, j)
     deleteat!(copy(θ), j), θ[j]
 end
 
-struct IMHSinusoid <: AbstractMCMC.AbstractSampler
+struct IMHRWMHSinusoid <: AbstractMCMC.AbstractSampler
     n_snapshots::Int
 end
 
-function ReversibleJump.transition_mcmc(rng::Random.AbstractRNG, mcmc::IMHSinusoid, model, θ)
+function ReversibleJump.transition_mcmc(rng::Random.AbstractRNG, mcmc::IMHRWMHSinusoid, model, θ)
     σ    = 1/5/mcmc.n_snapshots
     q    = Uniform(0, π)
     θ    = copy(θ)

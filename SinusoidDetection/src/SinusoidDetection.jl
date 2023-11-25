@@ -3,8 +3,9 @@ module SinusoidDetection
 
 export
     SinusoidModel,
+    rand_sinusoids,
     SinusoidUniformLocalProposal,
-    IMHSinusoid
+    IMHRWMHSinusoid
 
 using AbstractMCMC
 using Accessors
@@ -16,7 +17,8 @@ using Random
 using ReversibleJump
 using SimpleUnPack
  
-include("mcmc.jl")
+include("imhrwmh.jl")
+include("slice.jl")
 include("model.jl")
 
 end

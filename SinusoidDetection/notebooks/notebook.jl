@@ -30,7 +30,7 @@ begin
 	gamma0 = 10.
 	delta  = 8.
 	N      = 32
-	model  = SinusoidModel(rng, N, gamma0, nu0, delta)
+	model  = rand_sinusoids(rng, N, gamma0, nu0, delta)
 end
 
 # ╔═╡ e2a669a7-953a-4eeb-a410-6fe5dd092c50
