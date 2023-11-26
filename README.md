@@ -14,8 +14,8 @@ In particular, it provides the following implementations:
 
 The exactness of the implementations are tested using the package [MCMCTesting.jl](https://github.com/Red-Portal/MCMCTesting.jl), which implements the hypothesis-testing approach by Gandy and Scott[^GS2020].
 
-For the types of jump moves, the package currently only provides birth and death.
-But additional moves will also be added in the future.
+For the jump moves, the package currently only provides (unsorted) birth and death.
+But additional moves such as sorted birth-death and split-merge, are planned to be added in the future.
 
 ## Example
 An example of using the package is provided in `SinusoidDetection/`.
