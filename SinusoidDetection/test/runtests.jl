@@ -14,12 +14,12 @@ using SinusoidDetection
 
 using Test
 
-struct SinusoidFixedOrderModel{Model <: SinusoidModel}
+struct SinusoidFixedOrderModel{Model <: SinusoidDetection.AbstractSinusoidModel}
     k::Int
     model::Model
 end
 
-function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidModel)
+function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidKnownSNR)
     @unpack y, gamma0, nu0, delta, orderprior = model
 
     N  = length(y)
@@ -29,12 +29,14 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidModel)
     δ² = delta*delta
 
     D   = SinusoidDetection.spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D) + eps(Float64)*I)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-10*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
     ω, y
 end
 
-function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidFixedOrderModel)
+function MCMCTesting.sample_joint(
+    rng::Random.AbstractRNG, model::SinusoidFixedOrderModel{<:SinusoidKnownSNR}
+)
     @unpack y, gamma0, nu0, delta, orderprior = model.model
 
     N  = length(y)
@@ -44,7 +46,7 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidFixedO
     δ² = delta*delta
 
     D   = SinusoidDetection.spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D) + eps(Float64)*I)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-10*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
     ω, y
 end

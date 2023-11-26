@@ -1,6 +1,9 @@
 
 function MCMCTesting.markovchain_transition(
-    rng::Random.AbstractRNG, model::SinusoidModel, rjmcmc::ReversibleJumpMCMC, θ, y
+    rng   ::Random.AbstractRNG,
+    model ::SinusoidDetection.AbstractSinusoidModel,
+    rjmcmc::ReversibleJumpMCMC,
+    θ, y
 )
     model  = @set model.y = y
     _, init_state = AbstractMCMC.step(

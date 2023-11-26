@@ -28,7 +28,7 @@ begin
 	rng    = Random.default_rng()
 	nu0    = 10.
 	gamma0 = 10.
-	delta  = 8.
+	delta  = 1.
 	N      = 32
 	model  = rand_sinusoids(rng, N, gamma0, nu0, delta)
 end
@@ -39,7 +39,7 @@ begin
 	path_arit = ArithmeticPath()
     path_geom = GeometricPath()
 	prop      = SinusoidUniformLocalProposal()
-	mcmc      = IMHSinusoid(N)
+	mcmc      = IMHRWMHSinusoid(N)
 
     n_samples      = 5000
 	initial_params = Float64[]

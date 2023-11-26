@@ -2,7 +2,7 @@
 module SinusoidDetection
 
 export
-    SinusoidModel,
+    SinusoidKnownSNR,
     rand_sinusoids,
     SinusoidUniformLocalProposal,
     IMHRWMHSinusoid,
@@ -25,9 +25,40 @@ struct GibbsObjective{Model, Idx <: Integer, Vec <: AbstractVector}
     idx  ::Idx
     θ    ::Vec
 end
- 
-include("imhrwmh.jl")
-include("slice.jl")
-include("model.jl")
+
+abstract type AbstractSinusoidModel <: AbstractMCMC.AbstractModel end
+
+struct IMHRWMHSinusoid <: AbstractMCMC.AbstractSampler
+    n_snapshots::Int
+end
+
+function rand_sinusoids(
+    rng::Random.AbstractRNG, N::Int, gamma0::Real, nu0::Real, delta::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    k  = rand(rng, orderprior)
+    ω  = rand(rng, Uniform(0, π), k)
+    σ² = rand(rng, InverseGamma(nu0/2, gamma0/2))
+    δ² = delta*delta
+
+    D   = spectrum_matrix(ω, N)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
+    y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
+    SinusoidKnownSNR(y, gamma0, nu0, delta, orderprior)
+end
+
+function rand_sinusoids(
+    N::Int, gamma0::Real, nu0::Real, delta::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    rand_sinusoids(Random.default_rng(), N, gamma0, nu0, delta, orderprior)
+end
+
+include("inference/imhrwmh.jl")
+include("inference/slice.jl")
+
+include("models/common.jl")
+include("models/knownsnr.jl")
+#include("models/unknownsnr.jl")
 
 end
