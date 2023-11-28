@@ -16,11 +16,11 @@ function MCMCTesting.markovchain_transition(
 end
 
 @testset "rjmcmc" begin
-    nu0    = 10.0
-    gamma0 = 10.0
+    nu0    = 2.0
+    gamma0 = 5.0
     delta  = 8.0
     N      = 16
-    model  = rand_sinusoids(N, gamma0, nu0, delta)
+    model  = rand_sinusoids(N, nu0, gamma0, delta)
 
     prior = Geometric(0.2)
     path  = ArithmeticPath()

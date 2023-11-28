@@ -11,13 +11,13 @@ function MCMCTesting.markovchain_transition(
 end
 
 @testset "slice samplers" begin
-    nu0    = 10.0
-    gamma0 = 10.0
+    nu0    = 2.0
+    gamma0 = 3.0
     delta  = 8.0
     N      = 16
 
     k          = 2
-    model_base = rand_sinusoids(N, gamma0, nu0, delta)
+    model_base = rand_sinusoids(N, nu0, gamma0, delta)
     model      = SinusoidFixedOrderModel(k, model_base)
     _, y       = MCMCTesting.sample_joint(Random.default_rng(), model)
     model      = @set model.model.y = y

@@ -47,8 +47,8 @@ function collapsed_likelihood(
     y ::AbstractVector,
     ω ::AbstractVector,
     δ²::Real,
+    ν0::Real,
     γ0::Real,
-    ν0::Real
 )
     N  = length(y)
     k  = length(ω)
@@ -68,4 +68,42 @@ function collapsed_likelihood(
             return -Inf
         end
     end
+end
+
+function sample_amplitude_and_noise(
+    rng::Random.AbstractRNG,
+    y  ::AbstractVector,
+    D  ::AbstractMatrix,
+    DᵀD::PDMats.AbstractPDMat,
+    ν0 ::Real,
+    γ0 ::Real,
+    δ² ::Real,
+)
+    N    = length(y)
+    M⁻¹  = (1 + 1/δ²)*DᵀD
+    P    = I - δ²/(1 + δ²)*PDMats.X_invA_Xt(DᵀD, D)
+    m    = M⁻¹\(D*y)
+    yᵀPy = PDMats.quad(P, y)
+    σ²   = rand(rng, InverseGamma((ν0 + N)/2, (γ0 + yᵀPy)/2));
+    a    = PDMats.whiten(M⁻¹, randn(rng, N)) + m 
+    a, σ²
+end
+
+function sample_gibbs_snr(
+    rng ::Random.AbstractRNG,
+    y   ::AbstractVector,
+    ω   ::AbstractMatrix,
+    ν0  ::Real,
+    γ0  ::Real,
+    α_δ²::Real,
+    β_δ²::Real,
+    δ²  ::Real,
+)
+    k     = length(ω)
+    N     = length(y)
+    D     = spectrum_matrix(ω, N)
+    DᵀD   = PDMats.PDMat(Hermitian(D'*D))
+    a, σ² = sample_amplitude_and_noise(rng, y, D, DᵀD, ν0, γ0, δ²)
+    s²    = PDMats.quad(DᵀD, a)/2/σ²
+    rand(rng, InverseGamma(k + α_δ², s² + β_δ²))
 end

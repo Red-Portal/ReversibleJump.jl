@@ -29,7 +29,7 @@ end
 abstract type AbstractSinusoidModel <: AbstractMCMC.AbstractModel end
 
 function rand_sinusoids(
-    rng::Random.AbstractRNG, N::Int, gamma0::Real, nu0::Real, delta::Real,
+    rng::Random.AbstractRNG, N::Int, nu0::Real, gamma0::Real, delta::Real,
     orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
 )
     k  = rand(rng, orderprior)
@@ -40,14 +40,14 @@ function rand_sinusoids(
     D   = spectrum_matrix(ω, N)
     DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
     y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
-    SinusoidKnownSNR(y, gamma0, nu0, delta, orderprior)
+    SinusoidKnownSNR(y, nu0, gamma0, delta, orderprior)
 end
 
 function rand_sinusoids(
-    N::Int, gamma0::Real, nu0::Real, delta::Real,
+    N::Int, nu0::Real, gamma0::Real, delta::Real,
     orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
 )
-    rand_sinusoids(Random.default_rng(), N, gamma0, nu0, delta, orderprior)
+    rand_sinusoids(Random.default_rng(), N, nu0, gamma0, delta, orderprior)
 end
 
 include("inference/imhrwmh.jl")
