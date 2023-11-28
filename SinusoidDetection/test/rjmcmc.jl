@@ -25,7 +25,7 @@ end
     prior = Geometric(0.2)
     path  = ArithmeticPath()
     prop  = SinusoidUniformLocalProposal()
-    mcmc  = IMHRWMHSinusoid(N)
+    mcmc  = IMHRWMHSinusoidKnownSNR(N)
 
     T      = 4
     jump   = AnnealedJumpProposal(T, prop, path)

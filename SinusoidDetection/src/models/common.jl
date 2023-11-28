@@ -25,13 +25,6 @@ function ReversibleJump.local_deleteat(::AbstractSinusoidModel, θ, j)
     deleteat!(copy(θ), j), θ[j]
 end
 
-ReversibleJump.transition_mcmc(
-    rng  ::Random.AbstractRNG,
-    mcmc ::AbstractSliceSampling,
-    model,
-    θ
-) = slice_sampling(rng, mcmc, model, θ)
-
 function spectrum_matrix(ω::AbstractVector, N::Int)
     k = length(ω)
     D = zeros(N, 2*k)
@@ -44,10 +37,16 @@ function spectrum_matrix(ω::AbstractVector, N::Int)
     D
 end
 
+function marginal_covariance_residual(ω, N, δ²)
+    D   = spectrum_matrix(ω, N)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D))
+    I - δ²/(1 + δ²)*PDMats.X_invA_Xt(DᵀD, D)
+end
+
 function collapsed_likelihood(
     y ::AbstractVector,
     ω ::AbstractVector,
-    δ ::Real,
+    δ²::Real,
     γ0::Real,
     ν0::Real
 )
@@ -57,16 +56,13 @@ function collapsed_likelihood(
         N = length(y)
         (-(N + ν0)/2)*log(γ0 + dot(y, y))
     else
-        δ² = δ*δ
         for j in 1:k
             if ω[j] > π || ω[j] < 0
                 return -Inf
             end
         end
-        D = spectrum_matrix(ω, N)
         try
-            DᵀD = PDMats.PDMat(Hermitian(D'*D))
-            P   = I - δ²/(1 + δ²)*PDMats.X_invA_Xt(DᵀD, D)
+            P = marginal_covariance_residual(ω, N, δ²)
             (N + ν0)/-2*log(γ0 + PDMats.quad(P, y)) - k*log(1 + δ²)
         catch
             return -Inf

@@ -5,7 +5,7 @@ export
     SinusoidKnownSNR,
     rand_sinusoids,
     SinusoidUniformLocalProposal,
-    IMHRWMHSinusoid,
+    IMHRWMHSinusoidKnownSNR,
     SliceDoublingOut,
     SliceSteppingOut,
     Slice
@@ -27,10 +27,6 @@ struct GibbsObjective{Model, Idx <: Integer, Vec <: AbstractVector}
 end
 
 abstract type AbstractSinusoidModel <: AbstractMCMC.AbstractModel end
-
-struct IMHRWMHSinusoid <: AbstractMCMC.AbstractSampler
-    n_snapshots::Int
-end
 
 function rand_sinusoids(
     rng::Random.AbstractRNG, N::Int, gamma0::Real, nu0::Real, delta::Real,
