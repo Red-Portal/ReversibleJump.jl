@@ -5,14 +5,14 @@ struct SinusoidKnownSNR{
     y         ::Y
     nu0       ::F
     gamma0    ::F
-    delta     ::F
+    delta2    ::F
     orderprior::P
 end
 
 function ReversibleJump.logdensity(model::SinusoidKnownSNR, ω)
-    @unpack y, gamma0, nu0, delta, orderprior = model
+    @unpack y, gamma0, nu0, delta2, orderprior = model
     k    = length(ω)
-    ℓp_y = collapsed_likelihood(y, ω, delta*delta, nu0, gamma0)
+    ℓp_y = collapsed_likelihood(y, ω, delta2, nu0, gamma0)
     ℓp_k = logpdf(orderprior, k)
     ℓp_θ = k*logpdf(Uniform(0, π), π/2)
     ℓp_y + ℓp_k + ℓp_θ
@@ -40,10 +40,3 @@ function ReversibleJump.transition_mcmc(
     end
     θ, logdensity(model, θ)
 end
-
-ReversibleJump.transition_mcmc(
-    rng  ::Random.AbstractRNG,
-    mcmc ::AbstractSliceSampling,
-    model,
-    θ
-) = slice_sampling(rng, mcmc, model, θ)

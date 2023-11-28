@@ -3,9 +3,12 @@ module SinusoidDetection
 
 export
     SinusoidKnownSNR,
-    rand_sinusoids,
+    SinusoidUnknownSNR,
+    rand_sinusoids_knownsnr,
+    rand_sinusoids_unknownsnr,
     SinusoidUniformLocalProposal,
     IMHRWMHSinusoidKnownSNR,
+    IMHRWMHSinusoidUnknownSNR,
     SliceDoublingOut,
     SliceSteppingOut,
     Slice
@@ -28,26 +31,59 @@ end
 
 abstract type AbstractSinusoidModel <: AbstractMCMC.AbstractModel end
 
-function rand_sinusoids(
-    rng::Random.AbstractRNG, N::Int, nu0::Real, gamma0::Real, delta::Real,
+function rand_sinusoids_knownsnr(
+    rng::Random.AbstractRNG, N::Int, nu0::Real, gamma0::Real, delta2::Real,
     orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
 )
     k  = rand(rng, orderprior)
     ω  = rand(rng, Uniform(0, π), k)
     σ² = rand(rng, InverseGamma(nu0/2, gamma0/2))
-    δ² = delta*delta
-
-    D   = spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-15*I)
-    y   = rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
-    SinusoidKnownSNR(y, nu0, gamma0, delta, orderprior)
+    y  = sample_signal(rng, ω, N, σ², delta2)
+    SinusoidKnownSNR(y, nu0, gamma0, delta2, orderprior)
 end
 
-function rand_sinusoids(
-    N::Int, nu0::Real, gamma0::Real, delta::Real,
+function rand_sinusoids_knownsnr(
+    N::Int, nu0::Real, gamma0::Real, delta2::Real,
     orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
 )
-    rand_sinusoids(Random.default_rng(), N, nu0, gamma0, delta, orderprior)
+    rand_sinusoids_knownsnr(Random.default_rng(), N, nu0, gamma0, delta2, orderprior)
+end
+
+function rand_sinusoids_unknownsnr(
+    rng         ::Random.AbstractRNG,
+    N           ::Int,
+    nu0         ::Real,
+    gamma0      ::Real,
+    alpha_delta2::Real,
+    beta_delta2 ::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    k  = rand(rng, orderprior)
+    ω  = rand(rng, Uniform(0, π), k)
+    σ² = rand(rng, InverseGamma(nu0/2, gamma0/2))
+    δ² = rand(rng, InverseGamma(alpha_delta2, beta_delta2))
+    δ  = sqrt(δ²)
+    y  = sample_signal(rng, ω, N, σ², δ)
+    SinusoidUnknownSNR(y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior)
+end
+
+function rand_sinusoids_unknownsnr(
+    N           ::Int,
+    nu0         ::Real,
+    gamma0      ::Real,
+    alpha_delta2::Real,
+    beta_delta2 ::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    rand_sinusoids_unknownsnr(
+        Random.default_rng(),
+        N,
+        nu0,
+        gamma0,
+        alpha_delta2,
+        beta_delta2,
+        orderprior
+    )
 end
 
 include("inference/imhrwmh.jl")
@@ -55,6 +91,6 @@ include("inference/slice.jl")
 
 include("models/common.jl")
 include("models/knownsnr.jl")
-#include("models/unknownsnr.jl")
+include("models/unknownsnr.jl")
 
 end

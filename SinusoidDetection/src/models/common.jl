@@ -25,6 +25,13 @@ function ReversibleJump.local_deleteat(::AbstractSinusoidModel, θ, j)
     deleteat!(copy(θ), j), θ[j]
 end
 
+ReversibleJump.transition_mcmc(
+    rng  ::Random.AbstractRNG,
+    mcmc ::AbstractSliceSampling,
+    model,
+    θ
+) = slice_sampling(rng, mcmc, model, θ)
+
 function spectrum_matrix(ω::AbstractVector, N::Int)
     k = length(ω)
     D = zeros(N, 2*k)
@@ -35,12 +42,6 @@ function spectrum_matrix(ω::AbstractVector, N::Int)
         end
     end
     D
-end
-
-function marginal_covariance_residual(ω, N, δ²)
-    D   = spectrum_matrix(ω, N)
-    DᵀD = PDMats.PDMat(Hermitian(D'*D))
-    I - δ²/(1 + δ²)*PDMats.X_invA_Xt(DᵀD, D)
 end
 
 function collapsed_likelihood(
@@ -62,8 +63,11 @@ function collapsed_likelihood(
             end
         end
         try
-            P = marginal_covariance_residual(ω, N, δ²)
-            (N + ν0)/-2*log(γ0 + PDMats.quad(P, y)) - k*log(1 + δ²)
+            D    = spectrum_matrix(ω, N)
+            DᵀD  = PDMats.PDMat(Hermitian(D'*D + 1e-10*I))
+            Dᵀy  = D'*y
+            yᵀPy = dot(y, y) - δ²/(1 + δ²)*PDMats.invquad(DᵀD, Dᵀy)
+            (N + ν0)/-2*log(γ0 + yᵀPy) - k*log(1 + δ²)
         catch
             return -Inf
         end
@@ -81,18 +85,19 @@ function sample_amplitude_and_noise(
 )
     N    = length(y)
     M⁻¹  = (1 + 1/δ²)*DᵀD
-    P    = I - δ²/(1 + δ²)*PDMats.X_invA_Xt(DᵀD, D)
-    m    = M⁻¹\(D*y)
-    yᵀPy = PDMats.quad(P, y)
-    σ²   = rand(rng, InverseGamma((ν0 + N)/2, (γ0 + yᵀPy)/2));
-    a    = PDMats.whiten(M⁻¹, randn(rng, N)) + m 
+    Dᵀy  = D'*y
+    m    = M⁻¹\Dᵀy
+    yᵀPy = dot(y, y) - PDMats.invquad(M⁻¹, Dᵀy)
+    yᵀPy = max(yᵀPy, eps(eltype(y)))
+    σ²   = rand(rng, InverseGamma((ν0 + N)/2, (γ0 + yᵀPy)/2))
+    a    = rand(rng, MvNormal(m, σ²*inv(M⁻¹)))
     a, σ²
 end
 
 function sample_gibbs_snr(
     rng ::Random.AbstractRNG,
     y   ::AbstractVector,
-    ω   ::AbstractMatrix,
+    ω   ::AbstractVector,
     ν0  ::Real,
     γ0  ::Real,
     α_δ²::Real,
@@ -102,8 +107,15 @@ function sample_gibbs_snr(
     k     = length(ω)
     N     = length(y)
     D     = spectrum_matrix(ω, N)
-    DᵀD   = PDMats.PDMat(Hermitian(D'*D))
+    DᵀD   = PDMats.PDMat(Hermitian(D'*D + 1e-10*I))
     a, σ² = sample_amplitude_and_noise(rng, y, D, DᵀD, ν0, γ0, δ²)
-    s²    = PDMats.quad(DᵀD, a)/2/σ²
-    rand(rng, InverseGamma(k + α_δ², s² + β_δ²))
+    rand(rng, InverseGamma(k + α_δ², PDMats.quad(DᵀD, a)/2/σ² + β_δ²))
+end
+
+function sample_signal(
+    rng::Random.AbstractRNG, ω::AbstractVector, N::Int, σ²::Real, δ²::Real
+)
+    D   = spectrum_matrix(ω, N)
+    DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-10*I)
+    rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
 end
