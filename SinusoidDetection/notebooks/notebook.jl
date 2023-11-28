@@ -28,9 +28,9 @@ begin
 	rng    = Random.default_rng()
 	nu0    = 10.
 	gamma0 = 10.
-	delta  = 1.
+	delta2 = 1.
 	N      = 32
-	model  = rand_sinusoids(rng, N, gamma0, nu0, delta)
+	model  = rand_sinusoids(rng, N, gamma0, nu0, delta2)
 end
 
 # ╔═╡ e2a669a7-953a-4eeb-a410-6fe5dd092c50
