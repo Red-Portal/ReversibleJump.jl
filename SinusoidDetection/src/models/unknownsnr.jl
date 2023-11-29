@@ -1,13 +1,13 @@
 
 struct SinusoidUnknownSNR{
-    Y <: AbstractVector, F <: Real, P
+    Y <: AbstractVector, F <: Real, O
 } <: SinusoidDetection.AbstractSinusoidModel
     y           ::Y
     nu0         ::F
     gamma0      ::F
     alpha_delta2::F
     beta_delta2 ::F
-    orderprior  ::P
+    orderprior  ::O
 end
 
 function ReversibleJump.logdensity(model::SinusoidUnknownSNR, θ)
@@ -27,12 +27,36 @@ function ReversibleJump.logdensity(model::SinusoidUnknownSNR, θ)
     end
 end
 
-struct IMHRWMHSinusoidUnknownSNR <: AbstractMCMC.AbstractSampler
-    n_snapshots::Int
+function ReversibleJump.local_proposal_logpdf(
+    ::SinusoidUnknownSNR,
+    ::SinusoidUniformLocalProposal,
+    θ, j
+)
+    logpdf(Uniform(0, π), θ[j+1])
+end
+
+function ReversibleJump.local_insert(::SinusoidUnknownSNR, θ, j, θj)
+    insert!(copy(θ), j+1, θj)
+end
+
+function ReversibleJump.local_deleteat(::SinusoidUnknownSNR, θ, j)
+    deleteat!(copy(θ), j+1), θ[j+1]
+end
+
+struct IMHRWMHUnknownSNR{
+    Prop <: ContinuousUnivariateDistribution
+} <: AbstractMCMC.AbstractSampler
+    indep_proposal::Prop
+    n_snapshots   ::Int
+end
+
+function IMHRWMHUnknownSNR(y::AbstractVector, n_snapshots::Int)
+    q_imh = spectrum_energy_proposal(y, n_snapshots)
+    IMHRWMHUnknownSNR(q_imh, n_snapshots)
 end
 
 function ReversibleJump.transition_mcmc(
-    rng::Random.AbstractRNG, mcmc::IMHRWMHSinusoidUnknownSNR, model, θ
+    rng::Random.AbstractRNG, mcmc::IMHRWMHUnknownSNR, model, θ
 )
     @unpack y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior = model
     θ = copy(θ)
@@ -52,19 +76,41 @@ function ReversibleJump.transition_mcmc(
             The order matters: ω should be sampled first and then δ²
             (For as why, refer to Sampler 3 in Van Dyk and Park (2008), JASA.)
         =##
-
-        δ²    = θ[1]
-        ω     = θ[2:end]
-        ω′, lp = ReversibleJump.transition_mcmc(
-            rng,
-            IMHRWMHSinusoidKnownSNR(mcmc.n_snapshots),
-            SinusoidKnownSNR(y, nu0, gamma0, δ², orderprior),
-            ω   
+        q_imh = mcmc.indep_proposal
+        σ_rw  = 1/5/mcmc.n_snapshots
+        ω_idx_range = 2:length(θ)
+        for ω_idx in ω_idx_range
+            model_gibbs = GibbsObjective(model, ω_idx, θ)
+            ωi′, _ = if rand(Bernoulli(0.2))
+                transition_imh(rng, model_gibbs, q_imh, θ[ω_idx])
+            else
+                transition_rwmh(rng, model_gibbs, σ_rw, θ[ω_idx])
+            end
+            θ[ω_idx] = ωi′
+        end
+        θ[1] = sample_gibbs_snr(
+            rng, y, θ[2:end], nu0, gamma0, alpha_delta2, beta_delta2, θ[1]
         )
-        δ²′ = sample_gibbs_snr(rng, y, ω′, nu0, gamma0, alpha_delta2, beta_delta2, δ²)
-        θ[1]     = δ²′
-        θ[2:end] = ω′
-        θ, lp
+        θ, logdensity(model, θ)
     end
 end
 
+struct SliceUnknownSNR{
+    S <: AbstractSliceSampling, F <: Real
+} <: AbstractMCMC.AbstractSampler
+    slice_sampler::S
+    window_omega ::F
+    window_delta2::F
+end
+
+function ReversibleJump.transition_mcmc(
+    rng  ::Random.AbstractRNG,
+    mcmc ::SliceUnknownSNR,
+    model,
+    θ
+)
+    k             = length(θ) - 1
+    window        = vcat([mcmc.window_delta2], fill(mcmc.window_omega, k))
+    slice_sampler = mcmc.slice_sampler
+    slice_sampling(rng, (@set slice_sampler.window = window), model, θ)
+end

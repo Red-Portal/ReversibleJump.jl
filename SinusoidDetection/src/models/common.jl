@@ -9,33 +9,10 @@ function ReversibleJump.local_proposal_sample(
     rand(rng, Uniform(0, π))
 end
 
-function ReversibleJump.local_proposal_logpdf(
-    ::AbstractSinusoidModel,
-    ::SinusoidUniformLocalProposal,
-    θ, j
-)
-    logpdf(Uniform(0, π), θ[j])
-end
-
-function ReversibleJump.local_insert(::AbstractSinusoidModel, θ, j, θj)
-    insert!(copy(θ), j, θj)
-end
-
-function ReversibleJump.local_deleteat(::AbstractSinusoidModel, θ, j)
-    deleteat!(copy(θ), j), θ[j]
-end
-
-ReversibleJump.transition_mcmc(
-    rng  ::Random.AbstractRNG,
-    mcmc ::AbstractSliceSampling,
-    model,
-    θ
-) = slice_sampling(rng, mcmc, model, θ)
-
 function spectrum_matrix(ω::AbstractVector, N::Int)
     k = length(ω)
-    D = zeros(N, 2*k)
-    for i in 1:N
+    D = zeros(eltype(ω), N, 2*k)
+    @turbo for i in 1:N
         for j in 1:k
             D[i,2*j - 1] = cos(ω[j]*(i-1))
             D[i,2*j    ] = sin(ω[j]*(i-1))
@@ -118,4 +95,23 @@ function sample_signal(
     D   = spectrum_matrix(ω, N)
     DᵀD = PDMats.PDMat(Hermitian(D'*D) + 1e-10*I)
     rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
+end
+
+function spectrum_energy_proposal(y::AbstractVector, n_snapshots::Int)
+    n_fft    = nextpow(2, n_snapshots)*2
+    n_fft_in = n_fft ÷ 2
+    bin_uniform = map(0:n_fft_in-1) do l
+        Uniform(l*2*π/n_fft, (l+1)*2*π/n_fft)
+    end
+    y_pad = vcat(y, zeros(n_fft - n_snapshots))
+    Y     = fft(y_pad)[1:n_fft_in]
+    mag_Y = abs2.(Y)
+
+    # Clamp the unnormalized proposal density so that
+    # IMH importance weights are bounded.
+    peak_power   = maximum(mag_Y)
+    p_bin_unnorm = max.(mag_Y, peak_power*0.01)
+    p_bin        = p_bin_unnorm / sum(p_bin_unnorm)
+
+    MixtureModel(bin_uniform, p_bin)
 end

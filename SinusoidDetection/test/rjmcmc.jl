@@ -41,7 +41,7 @@ end
     prior = Geometric(0.2)
     path  = ArithmeticPath()
     prop  = SinusoidUniformLocalProposal()
-    mcmc  = IMHRWMHSinusoidKnownSNR(N)
+    mcmc  = IMHRWMHKnownSNR(Uniform(0, π), N)
 
     T      = 4
     jump   = AnnealedJumpProposal(T, prop, path)
@@ -72,7 +72,7 @@ end
     prior = Geometric(0.2)
     path  = ArithmeticPath()
     prop  = SinusoidUniformLocalProposal()
-    mcmc  = IMHRWMHSinusoidUnknownSNR(N)
+    mcmc  = IMHRWMHUnknownSNR(Uniform(0, π), N)
 
     jump   = IndepJumpProposal(prop)
     rjmcmc = ReversibleJumpMCMC(prior, jump, mcmc)

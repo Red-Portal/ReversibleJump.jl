@@ -1,32 +1,32 @@
 
 abstract type AbstractSliceSampling <: AbstractMCMC.AbstractSampler end
 
-struct SliceDoublingOut{F <: Real} <: AbstractSliceSampling
+struct SliceDoublingOut{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
     max_doubling_out::Int
-    window          ::F
+    window          ::Win
 end
 
 SliceDoublingOut(window::Real) = SliceDoublingOut(8, window)
 
-struct SliceSteppingOut{F <: Real} <: AbstractSliceSampling
+struct SliceSteppingOut{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
     max_stepping_out::Int
-    window          ::F
+    window          ::Win
 end
 
 SliceSteppingOut(window::Real) = SliceSteppingOut(32, window)
 
-struct Slice{F <: Real} <: AbstractSliceSampling
-    window::F
+struct Slice{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
+    window::Win
 end
 
 function find_interval(
     rng::Random.AbstractRNG,
-    alg::Slice,
+       ::Slice,
        ::GibbsObjective,
+    w  ::Real,
        ::Real,
     θ₀ ::Real,
 )
-    w = alg.window
     u = rand(rng)
     L = θ₀ - w*u
     R = L + w
@@ -37,6 +37,7 @@ function find_interval(
     rng  ::Random.AbstractRNG,
     alg  ::SliceDoublingOut,
     model::GibbsObjective,
+    w    ::Real,
     ℓy   ::Real,
     θ₀   ::Real,
 )
@@ -48,7 +49,6 @@ function find_interval(
         "Slice Sampling," 
         Annals of Statistics, 2003.
     =##
-    w = alg.window
     p = alg.max_doubling_out
 
     u = rand(rng)
@@ -80,9 +80,10 @@ function find_interval(
     rng  ::Random.AbstractRNG,
     alg  ::SliceSteppingOut,
     model::GibbsObjective,
+    w    ::Real,
     ℓy   ::Real,
     θ₀   ::Real,
-    )
+)
     #=
         Stepping out procedure for finding a slice
         (An acceptance rate < 1e-4 is treated as a potential infinite loop)
@@ -91,7 +92,6 @@ function find_interval(
         "Slice Sampling," 
         Annals of Statistics, 2003.
     =##
-    w = alg.window
     m = alg.max_stepping_out
 
     u      = rand(rng)
@@ -123,11 +123,13 @@ accept_slice_proposal(
     ::Real,
     ::Real,
     ::Real,
+    ::Real,
 ) = true
 
 function accept_slice_proposal(
-    alg  ::SliceDoublingOut,
+         ::SliceDoublingOut,
     model::GibbsObjective,
+    w    ::Real,
     ℓy   ::Real,
     θ₀   ::Real,
     θ₁   ::Real,
@@ -141,7 +143,6 @@ function accept_slice_proposal(
         "Slice Sampling," 
         Annals of Statistics, 2003.
     =##
-    w    = alg.window
     D    = false
     ℓπ_L = logdensity(model, L)
     ℓπ_R = logdensity(model, R)
@@ -171,8 +172,10 @@ function slice_sampling_univariate(
     rng  ::Random.AbstractRNG,
     alg  ::AbstractSliceSampling,
     model::GibbsObjective, 
+    w    ::Real,
     θ₀   ::Real,
-    ℓπ₀  ::Real)
+    ℓπ₀  ::Real
+)
     #=
         Univariate slice sampling kernel
         (An acceptance rate < 1e-4 is treated as a potential infinite loop)
@@ -184,14 +187,14 @@ function slice_sampling_univariate(
     u  = rand(rng)
     ℓy = log(u) + ℓπ₀
 
-    L, R, n_prop = find_interval(rng, alg, model, ℓy, θ₀)
+    L, R, n_prop = find_interval(rng, alg, model, w, ℓy, θ₀)
 
     while true
         U      = rand(rng)
         θ′      = L + U*(R - L)
         ℓπ′     = logdensity(model, θ′)
         n_prop += 1
-        if (ℓy < ℓπ′) && accept_slice_proposal(alg, model, ℓy, θ₀, θ′, L, R)
+        if (ℓy < ℓπ′) && accept_slice_proposal(alg, model, w, ℓy, θ₀, θ′, L, R)
             return θ′, ℓπ′, 1/n_prop
         end
 
@@ -213,14 +216,21 @@ function slice_sampling(
     model, 
     θ        ::AbstractVector,
 )
+    w = if alg.window isa Real
+        fill(alg.window, length(θ))
+    else
+        alg.window
+    end
+    @assert length(w) == length(θ)
+
     ℓp    = logdensity(model, θ)
     ∑acc  = 0.0
     n_acc = 0
-    k     = length(θ)
-    idxs  = randperm(rng, k) # the kernel is not reversible without random permutation
-    for idx in idxs
+    for idx in 1:length(θ)
         model_gibbs = GibbsObjective(model, idx, θ)
-        θ′idx, ℓp, acc = slice_sampling_univariate(rng, alg, model_gibbs, θ[idx], ℓp)
+        θ′idx, ℓp, acc = slice_sampling_univariate(
+            rng, alg, model_gibbs, w[idx], θ[idx], ℓp
+        )
         ∑acc  += acc
         n_acc += 1
         θ[idx] = θ′idx
