@@ -30,7 +30,10 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidKnownS
     ω, y
 end
 
-function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidUnknownSNR)
+function MCMCTesting.sample_joint(
+    rng::Random.AbstractRNG,
+    model::SinusoidUnknownSNR
+)
     @unpack y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior = model
 
     N  = length(y)
@@ -40,6 +43,22 @@ function MCMCTesting.sample_joint(rng::Random.AbstractRNG, model::SinusoidUnknow
     δ² = rand(rng, InverseGamma(alpha_delta2, beta_delta2))
     y  = SinusoidDetection.sample_signal(rng, ω, N, σ², δ²)
     θ  = vcat([δ²], ω)
+    θ, y
+end
+
+function MCMCTesting.sample_joint(
+    rng  ::Random.AbstractRNG,
+    model::SinusoidUnknownSNRReparam
+)
+    @unpack y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior = model
+
+    N  = length(y)
+    k  = rand(rng, orderprior)
+    ω  = rand(rng, Uniform(0, π), k)
+    σ² = rand(rng, InverseGamma(nu0/2, gamma0/2))
+    δ² = rand(rng, InverseGamma(alpha_delta2, beta_delta2))
+    y  = SinusoidDetection.sample_signal(rng, ω, N, σ², δ²)
+    θ  = vcat([log(δ²)], ω)
     θ, y
 end
 
@@ -57,7 +76,8 @@ function MCMCTesting.sample_joint(
 end
 
 function MCMCTesting.sample_joint(
-    rng::Random.AbstractRNG, model::SinusoidFixedOrderModel{<:SinusoidUnknownSNR}
+    rng  ::Random.AbstractRNG,
+    model::SinusoidFixedOrderModel{<:SinusoidUnknownSNR}
 )
     @unpack y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior = model.model
 
@@ -68,6 +88,22 @@ function MCMCTesting.sample_joint(
     δ² = rand(rng, InverseGamma(alpha_delta2, beta_delta2))
     y  = SinusoidDetection.sample_signal(rng, ω, N, σ², δ²)
     θ  = vcat([δ²], ω)
+    θ, y
+end
+
+function MCMCTesting.sample_joint(
+    rng  ::Random.AbstractRNG,
+    model::SinusoidFixedOrderModel{<:SinusoidUnknownSNRReparam}
+)
+    @unpack y, nu0, gamma0, alpha_delta2, beta_delta2, orderprior = model.model
+
+    N  = length(y)
+    k  = model.k
+    ω  = rand(rng, Uniform(0, π), k)
+    σ² = rand(rng, InverseGamma(nu0/2, gamma0/2))
+    δ² = rand(rng, InverseGamma(alpha_delta2, beta_delta2))
+    y  = SinusoidDetection.sample_signal(rng, ω, N, σ², δ²)
+    θ  = vcat([log(δ²)], ω)
     θ, y
 end
 

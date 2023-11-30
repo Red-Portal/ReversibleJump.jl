@@ -53,3 +53,44 @@ function rand_sinusoids_unknownsnr(
         orderprior
     )
 end
+
+function rand_sinusoids_unknownsnr_reparam(
+    rng         ::Random.AbstractRNG,
+    N           ::Int,
+    nu0         ::Real,
+    gamma0      ::Real,
+    alpha_delta2::Real,
+    beta_delta2 ::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    model_base = rand_sinusoids_unknownsnr(
+        rng, N, nu0, gamma0, alpha_delta2, beta_delta2, orderprior
+    )
+    SinusoidUnknownSNRReparam(
+        model_base.y,
+        model_base.nu0,
+        model_base.gamma0,
+        model_base.alpha_delta2,
+        model_base.beta_delta2,
+        model_base.orderprior,
+    )
+end
+
+function rand_sinusoids_unknownsnr_reparam(
+    N           ::Int,
+    nu0         ::Real,
+    gamma0      ::Real,
+    alpha_delta2::Real,
+    beta_delta2 ::Real,
+    orderprior = truncated(Poisson(3), upper=floor(Int, (N-1)/2))
+)
+    rand_sinusoids_unknownsnr_reparam(
+        Random.default_rng(),
+        N,
+        nu0,
+        gamma0,
+        alpha_delta2,
+        beta_delta2,
+        orderprior
+    )
+end
