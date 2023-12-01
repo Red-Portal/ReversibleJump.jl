@@ -1,22 +1,22 @@
 
 abstract type AbstractSliceSampling <: AbstractMCMC.AbstractSampler end
 
-struct SliceDoublingOut{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
+struct SliceDoublingOut{W <: AbstractVector} <: AbstractSliceSampling
     max_doubling_out::Int
-    window          ::Win
+    window          ::W
 end
 
-SliceDoublingOut(window::Real) = SliceDoublingOut(8, window)
+SliceDoublingOut(window::AbstractVector) = SliceDoublingOut(8, window)
 
-struct SliceSteppingOut{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
+struct SliceSteppingOut{W <: AbstractVector} <: AbstractSliceSampling
     max_stepping_out::Int
-    window          ::Win
+    window          ::W
 end
 
-SliceSteppingOut(window::Real) = SliceSteppingOut(32, window)
+SliceSteppingOut(window::AbstractVector) = SliceSteppingOut(32, window)
 
-struct Slice{Win <: Union{<:AbstractVector, <:Real}} <: AbstractSliceSampling
-    window::Win
+struct Slice{W <: AbstractVector} <: AbstractSliceSampling
+    window::W
 end
 
 function find_interval(
@@ -216,13 +216,9 @@ function slice_sampling(
     model, 
     θ        ::AbstractVector,
 )
-    w = if alg.window isa Real
-        fill(alg.window, length(θ))
-    else
-        alg.window
-    end
+    w = alg.window
     @assert length(w) == length(θ)
-
+    
     ℓp    = logdensity(model, θ)
     ∑acc  = 0.0
     n_acc = 0

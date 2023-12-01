@@ -1,13 +1,29 @@
 
 struct SinusoidUnknownSNRReparam{
-    Y <: AbstractVector, F <: Real, O
+    Y <: AbstractVector, R <: Real, O, F
 } <: SinusoidDetection.AbstractSinusoidModel
     y           ::Y
-    nu0         ::F
-    gamma0      ::F
-    alpha_delta2::F
-    beta_delta2 ::F
+    nu0         ::R
+    gamma0      ::R
+    alpha_delta2::R
+    beta_delta2 ::R
     orderprior  ::O
+    freqprop    ::F
+end
+
+function SinusoidUnknownSNRReparam(
+    y          ::AbstractVector,
+    ν0         ::Real,
+    γ0         ::Real,
+    α_δ²       ::Real,
+    β_δ²       ::Real,
+    orderprior,
+)
+    ν0, γ0, α_δ², β_δ² = promote(ν0, γ0, α_δ², β_δ²)
+    energydist = spectrum_energy_proposal(y)
+    SinusoidUnknownSNRReparam(
+        y, ν0, γ0, α_δ², β_δ², orderprior, energydist
+    )
 end
 
 function ReversibleJump.logdensity(model::SinusoidUnknownSNRReparam, θ)
@@ -27,11 +43,11 @@ function ReversibleJump.logdensity(model::SinusoidUnknownSNRReparam, θ)
 end
 
 function ReversibleJump.local_proposal_logpdf(
-    ::SinusoidUnknownSNRReparam,
-    ::SinusoidUniformLocalProposal,
+    model::SinusoidUnknownSNRReparam,
+         ::SinusoidLocalProposal,
     θ, j
 )
-    logpdf(Uniform(0, π), θ[j+1])
+    logpdf(model.freqprop, θ[j+1])
 end
 
 function ReversibleJump.local_insert(::SinusoidUnknownSNRReparam, θ, j, θj)
@@ -42,3 +58,25 @@ function ReversibleJump.local_deleteat(::SinusoidUnknownSNRReparam, θ, j)
     deleteat!(copy(θ), j+1), θ[j+1]
 end
 
+function SliceSinusoid(
+    sampler    ::AbstractSliceSampling,
+    model      ::SinusoidUnknownSNRReparam,
+    freq_window::Real,
+    snr_window ::Real
+)
+    adapted_sampler = @set sampler.window = [freq_window, snr_window]
+    SliceSinusoid(adapted_sampler, model)
+end
+
+function ReversibleJump.transition_mcmc(
+    rng  ::Random.AbstractRNG,
+    mcmc ::SliceSinusoid{<:AbstractSliceSampling, <:SinusoidUnknownSNRReparam},
+    model,
+    θ
+)
+    sampler         = mcmc.sampler
+    window_base     = sampler.window
+    window_adapted  = vcat(first(window_base), fill(last(window_base), length(θ)-1))
+    sampler_adapted = @set sampler.window = window_adapted
+    slice_sampling(rng, sampler_adapted, model, θ)
+end

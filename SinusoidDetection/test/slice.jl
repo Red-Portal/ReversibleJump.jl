@@ -2,11 +2,12 @@
 function MCMCTesting.markovchain_transition(
     rng  ::Random.AbstractRNG,
     model::SinusoidFixedOrderModel,
-    mcmc ::Union{<:SliceKnownSNR, <:SliceUnknownSNR},
+    mcmc ::Union{<:SliceSinusoid, <:SliceSinusoid},
     θ, y
 )
     model_base = model.model
-    model_base = @set model_base.y = y
+    model_base = @set model_base.y        = y
+    model_base = @set model_base.freqprop = Uniform(0, π)
     ReversibleJump.transition_mcmc(rng, mcmc, model_base, copy(θ)) |> first
 end
 
@@ -29,11 +30,11 @@ end
 
     window = 2.0
     for slice_sampler in [
-        Slice(window),
-        SliceDoublingOut(window),
-        SliceSteppingOut(window)
+        Slice(),
+        SliceDoublingOut(),
+        SliceSteppingOut()
     ]
-        mcmc    = SliceKnownSNR(slice_sampler, window)
+        mcmc    = SliceSinusoid(slice_sampler, model_base, window)
         subject = TestSubject(model, mcmc)
         @test seqmcmctest(test, subject, 0.001, n_pvalue_samples; show_progress=true)
     end
@@ -59,11 +60,11 @@ end
     
     window = 2.0
     for slice_sampler in [
-        Slice(window),
-        SliceDoublingOut(window),
-        SliceSteppingOut(window)
+        Slice(),
+        SliceDoublingOut(),
+        SliceSteppingOut()
     ]
-        mcmc    = SliceUnknownSNR(slice_sampler, window, window)
+        mcmc    = SliceSinusoid(slice_sampler, model_base, window, window)
         subject = TestSubject(model, mcmc)
         @test seqmcmctest(test, subject, 0.001, n_pvalue_samples; show_progress=true)
     end

@@ -5,7 +5,8 @@ function MCMCTesting.markovchain_transition(
     rjmcmc::ReversibleJumpMCMC,
     θ, y
 )
-    model  = @set model.y = y
+    model = @set model.y        = y
+    model = @set model.freqprop = Uniform(0, π)
     _, init_state = AbstractMCMC.step(
         rng, model, rjmcmc; initial_params=θ, initial_order=length(θ)
     )
@@ -39,8 +40,8 @@ end
     model = rand_sinusoids_knownsnr(N, ν0, γ0, δ)
 
     prior = Geometric(0.2)
-    prop  = SinusoidUniformLocalProposal()
-    mcmc  = IMHRWMHKnownSNR(Uniform(0, π), N)
+    prop  = SinusoidLocalProposal()
+    mcmc  = IMHRWMHSinusoid(model)
 
     T      = 4
     path   = ArithmeticPath()
@@ -69,8 +70,8 @@ end
     model = rand_sinusoids_unknownsnr(N, ν0, γ0, α_δ², β_δ²)
 
     prior = Geometric(0.2)
-    prop  = SinusoidUniformLocalProposal()
-    mcmc  = IMHRWMHUnknownSNR(Uniform(0, π), N)
+    prop  = SinusoidLocalProposal()
+    mcmc  = IMHRWMHSinusoid(model)
 
     jump   = IndepJumpProposal(prop)
     rjmcmc = ReversibleJumpMCMC(prior, jump, mcmc)
@@ -99,8 +100,8 @@ end
     prior    = Geometric(0.2)
     n_anneal = 4
     path     = ArithmeticPath()
-    prop     = SinusoidUniformLocalProposal()
-    mcmc     = SliceUnknownSNR(SliceSteppingOut(1.0), 0.5, 0.5)
+    prop     = SinusoidLocalProposal()
+    mcmc     = SliceSinusoid(SliceSteppingOut(), model, 0.5, 0.5)
 
     jump   = AnnealedJumpProposal(n_anneal, prop, path)
     rjmcmc = ReversibleJumpMCMC(prior, jump, mcmc)

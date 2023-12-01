@@ -2,22 +2,24 @@
 function MCMCTesting.markovchain_transition(
     rng  ::Random.AbstractRNG,
     model::SinusoidFixedOrderModel{<:SinusoidKnownSNR},
-    mcmc ::IMHRWMHKnownSNR,
+    mcmc ::IMHRWMHSinusoid{<:SinusoidKnownSNR},
     θ, y
 )
     model_base = model.model
     model_base = @set model_base.y = y
+    model_base = @set model_base.freqprop = Uniform(0, π)
     ReversibleJump.transition_mcmc(rng, mcmc, model_base, copy(θ)) |> first
 end
 
 function MCMCTesting.markovchain_transition(
     rng  ::Random.AbstractRNG,
     model::SinusoidFixedOrderModel{<:SinusoidUnknownSNR},
-    mcmc ::IMHRWMHUnknownSNR,
+    mcmc ::IMHRWMHSinusoid{<:SinusoidUnknownSNR},
     θ, y
 )
     model_base = model.model
     model_base = @set model_base.y = y
+    model_base = @set model_base.freqprop = Uniform(0, π)
     ReversibleJump.transition_mcmc(rng, mcmc, model_base, copy(θ)) |> first
 end
 
@@ -38,7 +40,7 @@ end
     n_mcmc_steps     = 10
     test             = TwoSampleTest(n_samples, n_mcmc_steps)
 
-    mcmc    = IMHRWMHKnownSNR(Uniform(0, π), N)
+    mcmc    = IMHRWMHSinusoid(model_base)
     subject = TestSubject(model, mcmc)
     @test seqmcmctest(test, subject, 0.0001, n_pvalue_samples; show_progress=true)
 end
@@ -61,7 +63,7 @@ end
     n_mcmc_steps     = 10
     test             = TwoSampleTest(n_samples, n_mcmc_steps)
 
-    mcmc    = IMHRWMHUnknownSNR(Uniform(0, π), N)
+    mcmc    = IMHRWMHSinusoid(model_base)
     subject = TestSubject(model, mcmc)
     @test seqmcmctest(test, subject, 0.0001, n_pvalue_samples; show_progress=true)
 end

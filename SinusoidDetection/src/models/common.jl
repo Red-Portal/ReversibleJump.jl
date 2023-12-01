@@ -1,12 +1,12 @@
 
-struct SinusoidUniformLocalProposal end
+struct SinusoidLocalProposal end
 
 function ReversibleJump.local_proposal_sample(
-    rng::Random.AbstractRNG,
-    ::AbstractSinusoidModel,
-    ::SinusoidUniformLocalProposal
+    rng  ::Random.AbstractRNG,
+    model::AbstractSinusoidModel,
+         ::SinusoidLocalProposal
 )
-    rand(rng, Uniform(0, π))
+    rand(rng, model.freqprop)
 end
 
 function spectrum_matrix(ω::AbstractVector, N::Int)
@@ -97,13 +97,14 @@ function sample_signal(
     rand(rng, MvNormal(Zeros(N), σ²*(δ²*PDMats.X_invA_Xt(DᵀD, D) + I)))
 end
 
-function spectrum_energy_proposal(y::AbstractVector, n_snapshots::Int)
-    n_fft    = nextpow(2, n_snapshots)*2
+function spectrum_energy_proposal(y::AbstractVector)
+    n_snap   = length(y)
+    n_fft    = nextpow(2, n_snap)*2
     n_fft_in = n_fft ÷ 2
     bin_uniform = map(0:n_fft_in-1) do l
         Uniform(l*2*π/n_fft, (l+1)*2*π/n_fft)
     end
-    y_pad = vcat(y, zeros(n_fft - n_snapshots))
+    y_pad = vcat(y, zeros(n_fft - n_snap))
     Y     = fft(y_pad)[1:n_fft_in]
     mag_Y = abs2.(Y)
 

@@ -8,14 +8,12 @@ export
     rand_sinusoids_knownsnr,
     rand_sinusoids_unknownsnr,
     rand_sinusoids_unknownsnr_reparam,
-    SinusoidUniformLocalProposal,
-    IMHRWMHKnownSNR,
-    IMHRWMHUnknownSNR,
+    SinusoidLocalProposal,
+    IMHRWMHSinusoid,
     SliceDoublingOut,
     SliceSteppingOut,
     Slice,
-    SliceKnownSNR,
-    SliceUnknownSNR
+    SliceSinusoid
 
 using AbstractMCMC
 using Accessors, SimpleUnPack
@@ -36,8 +34,25 @@ end
 abstract type AbstractSinusoidModel <: AbstractMCMC.AbstractModel end
 
 # General inference algorithsm
+
 include("inference/imhrwmh.jl")
 include("inference/slice.jl")
+
+struct IMHRWMHSinusoid{M <: AbstractSinusoidModel} <: AbstractMCMC.AbstractSampler
+    model::M
+end
+
+struct SliceSinusoid{
+    S <: AbstractSliceSampling,
+    M <: AbstractSinusoidModel
+} <: AbstractMCMC.AbstractSampler
+    sampler::S
+    model::M
+end
+
+Slice()            = Slice(Float64[])
+SliceSteppingOut() = SliceSteppingOut(Float64[])
+SliceDoublingOut() = SliceDoublingOut(Float64[])
 
 # Sinusoid Models
 include("models/common.jl")

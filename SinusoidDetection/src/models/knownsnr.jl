@@ -1,12 +1,27 @@
 
 struct SinusoidKnownSNR{
-    Y <: AbstractVector, F <: Real, P
+    Y <: AbstractVector, R <: Real, P, F
 } <: SinusoidDetection.AbstractSinusoidModel
     y         ::Y
-    nu0       ::F
-    gamma0    ::F
-    delta2    ::F
+    nu0       ::R
+    gamma0    ::R
+    delta2    ::R
     orderprior::P
+    freqprop  ::F
+end
+
+function SinusoidKnownSNR(
+    y          ::AbstractVector,
+    ν0         ::Real,
+    γ0         ::Real,
+    δ²         ::Real,
+    orderprior,
+)
+    ν0, γ0, δ² = promote(ν0, γ0, δ²)
+    energydist = spectrum_energy_proposal(y)
+    SinusoidKnownSNR(
+        y, ν0, γ0, δ², orderprior, energydist
+    )
 end
 
 function ReversibleJump.logdensity(model::SinusoidKnownSNR, ω)
@@ -19,11 +34,11 @@ function ReversibleJump.logdensity(model::SinusoidKnownSNR, ω)
 end
 
 function ReversibleJump.local_proposal_logpdf(
-    ::SinusoidKnownSNR,
-    ::SinusoidUniformLocalProposal,
+    model::SinusoidKnownSNR,
+         ::SinusoidLocalProposal,
     θ, j
 )
-    logpdf(Uniform(0, π), θ[j])
+    logpdf(model.freqprop, θ[j])
 end
 
 function ReversibleJump.local_insert(::SinusoidKnownSNR, θ, j, θj)
@@ -34,28 +49,17 @@ function ReversibleJump.local_deleteat(::SinusoidKnownSNR, θ, j)
     deleteat!(copy(θ), j), θ[j]
 end
 
-struct IMHRWMHKnownSNR{
-    Prop <: ContinuousUnivariateDistribution
-} <: AbstractMCMC.AbstractSampler
-    indep_proposal::Prop
-    n_snapshots   ::Int
-end
-
-function IMHRWMHKnownSNR(y::AbstractVector, n_snapshots::Int)
-    q_imh = spectrum_energy_proposal(y, n_snapshots)
-    IMHRWMHKnownSNR(q_imh, n_snapshots)
-end
-
 function ReversibleJump.transition_mcmc(
-    rng::Random.AbstractRNG, mcmc::IMHRWMHKnownSNR, model, θ
+    rng::Random.AbstractRNG, mcmc::IMHRWMHSinusoid{<:SinusoidKnownSNR}, target, θ
 )
-    σ_rw  = 1/5/mcmc.n_snapshots
-    q_imh = mcmc.indep_proposal
+    model = mcmc.model
+    σ_rw  = 1/5/length(model.y)
+    q_imh = model.freqprop
 
     θ = copy(θ)
     k = length(θ)
     for idx in 1:k
-        model_gibbs = GibbsObjective(model, idx, θ)
+        model_gibbs = GibbsObjective(target, idx, θ)
         θ′idx, _ = if rand(Bernoulli(0.2))
             transition_imh(rng, model_gibbs, q_imh, θ[idx])
         else
@@ -63,23 +67,26 @@ function ReversibleJump.transition_mcmc(
         end
         θ[idx]  = θ′idx
     end
-    θ, logdensity(model, θ)
+    θ, logdensity(target, θ)
 end
 
-struct SliceKnownSNR{
-    S <: AbstractSliceSampling, F <: Real
-} <: AbstractMCMC.AbstractSampler
-    slice_sampler::S
-    window_omega ::F
+function SliceSinusoid(
+    sampler    ::AbstractSliceSampling,
+    model      ::SinusoidKnownSNR,
+    freq_window::Real
+)
+    adapted_sampler = @set sampler.window = [freq_window]
+    SliceSinusoid(adapted_sampler, model)
 end
 
 function ReversibleJump.transition_mcmc(
     rng  ::Random.AbstractRNG,
-    mcmc ::SliceKnownSNR,
+    mcmc ::SliceSinusoid{<:AbstractSliceSampling, <:SinusoidKnownSNR},
     model,
     θ
 )
-    window        = mcmc.window_omega
-    slice_sampler = mcmc.slice_sampler
-    slice_sampling(rng, (@set slice_sampler.window = window), model, θ)
+    sampler         = mcmc.sampler
+    sampler_adapted = @set sampler.window = fill(only(sampler.window), length(θ))
+    slice_sampling(rng, sampler_adapted, model, θ)
 end
+
