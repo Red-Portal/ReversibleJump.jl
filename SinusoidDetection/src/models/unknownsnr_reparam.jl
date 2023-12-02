@@ -76,7 +76,8 @@ function ReversibleJump.transition_mcmc(
 )
     sampler         = mcmc.sampler
     window_base     = sampler.window
-    window_adapted  = vcat(first(window_base), fill(last(window_base), length(θ)-1))
+    window_adapted  = vcat(last(window_base), fill(first(window_base), length(θ)-1))
     sampler_adapted = @set sampler.window = window_adapted
-    slice_sampling(rng, sampler_adapted, model, θ)
+    θ, ℓp, _        =  slice_sampling(rng, sampler_adapted, model, θ)
+    θ, ℓp
 end

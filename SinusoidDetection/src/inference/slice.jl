@@ -216,6 +216,7 @@ function slice_sampling(
     model, 
     θ        ::AbstractVector,
 )
+    θ = copy(θ)
     w = alg.window
     @assert length(w) == length(θ)
     
