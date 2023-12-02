@@ -18,8 +18,18 @@
                 θ_init, logdensity(model, θ_init), k_init, NamedTuple()
             )
 
+            state′ = ReversibleJump.transition_jump(
+                rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0
+            )
+            @assert haskey(state′.stats, :move)           && state′.stats.move           == :jump
+            @assert haskey(state′.stats, :jump_move)      && state′.stats.jump_move      == :birth
+            @assert haskey(state′.stats, :proposal_order) && state′.stats.proposal_order == k_init + 1
+            @assert haskey(state′.stats, :jump_acceptance_rate)
+
             results = map(1:n_samples) do _
-                state′ = ReversibleJump.transition_jump(rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0)
+                state′ = ReversibleJump.transition_jump(
+                    rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0
+                )
                 param_jumped = state′.order != state.order
                 stat_jumps   = state′.stats.jump_accepted
                 (param_jumped, stat_jumps)
@@ -40,9 +50,20 @@
             state  = ReversibleJump.RJState(
                 θ_init, logdensity(model, θ_init), k_init, NamedTuple()
             )
+
+            state′ = ReversibleJump.transition_jump(
+                rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0
+            )
+
+            @assert haskey(state′.stats, :move)           && state′.stats.move           == :jump
+            @assert haskey(state′.stats, :jump_move)      && state′.stats.jump_move      == :death
+            @assert haskey(state′.stats, :proposal_order) && state′.stats.proposal_order == k_init - 1
+            @assert haskey(state′.stats, :jump_acceptance_rate)
             
             results = map(1:n_samples) do _
-                state′ = ReversibleJump.transition_jump(rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0)
+                state′ = ReversibleJump.transition_jump(
+                    rng, move, jump_proposal, state, mcmc, model, (a,b) -> 1.0
+                )
                 param_jumped = state′.order != state.order
                 stat_jumps   = state′.stats.jump_accepted
                 (param_jumped, stat_jumps)

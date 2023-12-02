@@ -15,7 +15,10 @@ function transition_jump(
     ℓα = min(0, ℓr - log(qktok′/qk′tok))
     α  = exp(ℓα)
         
-    stats = (move = Symbol(move), jump_acceptance_rate=α,)
+    stats = (move                 = :jump,
+             jump_move            = Symbol(move),
+             proposal_order       = k′,
+             jump_acceptance_rate = α,)
     
     if  log(rand(rng)) < ℓα
         stats′ = merge(stats, (jump_accepted=true,))
