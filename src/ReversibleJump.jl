@@ -36,7 +36,7 @@ function propose_jump          end
 function transition_mcmc       end
 function transition_jump       end
 
-abstract type AbstractRJMCMCSampler end
+abstract type AbstractRJMCMCSampler <: AbstractMCMC.AbstractSampler end
 
 abstract type AbstractJumpProposal end
 
@@ -58,6 +58,7 @@ struct NRJState{Param, NT <: NamedTuple} <: AbstractRJState
 end
 
 abstract type AbstractJumpMove     end
+
 abstract type AbstractJumpMovePair end
 
 struct IndepJumpProposal{Prop} <: AbstractJumpProposal

@@ -13,14 +13,39 @@
     initial_params = [0.0]
 
     @testset for sampler in [
-        ReversibleJump.ReversibleJumpMCMC(model.order_dist, AnnealedJumpProposal(n_anneal, prop, path), mcmc),
-        ReversibleJump.ReversibleJumpMCMC(model.order_dist, IndepJumpProposal(prop), mcmc),
-        ReversibleJump.NonReversibleJumpMCMC(AnnealedJumpProposal(n_anneal, prop, path), mcmc),
-        ReversibleJump.NonReversibleJumpMCMC(IndepJumpProposal(prop), mcmc),
+        ReversibleJump.ReversibleJumpMCMC(
+            model.order_dist, AnnealedJumpProposal(n_anneal, prop, path), mcmc
+        ),
+        ReversibleJump.ReversibleJumpMCMC(
+            model.order_dist, IndepJumpProposal(prop), mcmc
+        ),
+        ReversibleJump.NonReversibleJumpMCMC(
+            AnnealedJumpProposal(n_anneal, prop, path), mcmc
+        ),
+        ReversibleJump.NonReversibleJumpMCMC(
+            IndepJumpProposal(prop), mcmc
+        ),
     ]
+        @testset "AbstractMCMC.sample" begin
+            samples = AbstractMCMC.sample(
+                model,
+                sampler,
+                n_samples;
+                initial_order,
+                initial_params,
+                progress=false
+            )
+            @test length(samples) == n_samples
+        end
+
         @testset "sample" begin
             samples, stats = ReversibleJump.sample(
-                sampler, model, n_samples, initial_order, initial_params; show_progress=false
+                sampler,
+                model,
+                n_samples,
+                initial_order,
+                initial_params;
+                show_progress=false
             )
             @test length(samples) == n_samples
             @test length(stats)   == n_samples
@@ -28,7 +53,13 @@
 
         @testset "sample custom rng" begin
             samples, stats = ReversibleJump.sample(
-                rng, sampler, model, n_samples, initial_order, initial_params; show_progress=false
+                rng,
+                sampler,
+                model,
+                n_samples,
+                initial_order,
+                initial_params;
+                show_progress=false
             )
             @test length(samples) == n_samples
             @test length(stats)   == n_samples
@@ -37,7 +68,11 @@
         @testset "sample custom callback" begin
             callback(param, stats) = (foo = 42,)
             samples, stats = ReversibleJump.sample(
-                sampler, model, n_samples, initial_order, initial_params;
+                sampler,
+                model,
+                n_samples,
+                initial_order,
+                initial_params;
                 show_progress=false, callback=callback
             )
             @test length(samples) == n_samples
