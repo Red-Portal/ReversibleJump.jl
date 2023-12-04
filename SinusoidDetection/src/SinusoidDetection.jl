@@ -62,5 +62,6 @@ include("models/unknownsnr_reparam.jl")
 
 # Utilities
 include("rand_sinusoids.jl")
+include("relabel.jl")
 
 end

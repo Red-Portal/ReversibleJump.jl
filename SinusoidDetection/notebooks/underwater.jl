@@ -141,10 +141,27 @@ begin
 	Plots.histogram([exp(sample[1]) for sample in samples_burn], bins=range(1,100; length=30))
 end
 
-# ╔═╡ 5b209b3d-511a-4b7e-8fd5-1bae95d3f418
+# ╔═╡ 983e6e1e-86b5-4a22-b004-0f9ef26dd93a
+f = [sample[2:end] for sample in samples_burn]
+
+# ╔═╡ c76e555b-470c-47f2-8f1b-1a017395dc84
 begin
-    ω = vcat([sample[2:end] for sample in samples_burn]...)
-	Plots.histogram(ω*fs/2/π, bins=256, normed=true)
+	mixture, labeled = ReversibleJump.relabel(Random.default_rng(), f, 4; show_progress=false)
+end
+
+# ╔═╡ bfc9e429-8578-4875-9a10-fc3b4d8a5983
+begin
+	Plots.stephist(vcat(f...), bins=256, normed=true)
+	Plots.plot!(range(0, π; length=4096), x -> pdf(mixture, x), xlims=[0,π])
+end
+
+# ╔═╡ 399c32f7-dbc9-4e38-bc36-d0914acc1078
+begin
+	Plots.plot(mixture, xlims=[0,π])
+	Plots.histogram!(labeled[1], bins=range(0, π; length=256), normed=true, alpha=0.5)
+	Plots.histogram!(labeled[2], bins=range(0, π; length=256), normed=true, alpha=0.5)
+	Plots.histogram!(labeled[3], bins=range(0, π; length=256), normed=true, alpha=0.5)
+	Plots.histogram!(labeled[4], bins=range(0, π; length=256), normed=true, alpha=0.5)
 end
 
 # ╔═╡ Cell order:
@@ -161,4 +178,7 @@ end
 # ╠═e4de6326-0a3e-44e3-86e5-3a6bb8a5f257
 # ╠═f17f33e8-db45-4a1d-94a7-bfe0556d9804
 # ╠═f303d31b-7646-47af-8c5b-94e78377114d
-# ╠═5b209b3d-511a-4b7e-8fd5-1bae95d3f418
+# ╠═983e6e1e-86b5-4a22-b004-0f9ef26dd93a
+# ╠═c76e555b-470c-47f2-8f1b-1a017395dc84
+# ╠═bfc9e429-8578-4875-9a10-fc3b4d8a5983
+# ╠═399c32f7-dbc9-4e38-bc36-d0914acc1078
