@@ -17,13 +17,18 @@ export
 
 using AbstractMCMC
 using Accessors, SimpleUnPack
-using Random, Distributions
+using FFTW
 using FillArrays
 using LinearAlgebra
-using PDMats
-using ReversibleJump
 using LoopVectorization
-using FFTW
+using PDMats
+using ProgressMeter
+using Random, Distributions
+using ReversibleJump
+
+# Used only by relabel.jl
+using Statistics
+using StatsFuns
 
 struct GibbsObjective{Model, Idx <: Integer, Vec <: AbstractVector}
     model::Model

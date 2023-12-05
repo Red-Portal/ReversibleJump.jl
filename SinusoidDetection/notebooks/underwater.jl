@@ -86,8 +86,8 @@ end
 
 # ╔═╡ 3cdea5fa-a96d-4d39-af40-6b03bd4593c2
 begin
-    n_samples = 5000
-	n_anneal  = 4
+    n_samples = 100000
+	n_anneal  = 16
 
 	#model  = SinusoidUnknownSNR(y_sel, ν0, γ0,  α_δ², β_δ², prior)
 	#model  = SinusoidUnknownSNR(y_sel, ν0, γ0, α_δ², β_δ², prior)
@@ -146,13 +146,7 @@ f = [sample[2:end] for sample in samples_burn]
 
 # ╔═╡ c76e555b-470c-47f2-8f1b-1a017395dc84
 begin
-	mixture, labeled = ReversibleJump.relabel(Random.default_rng(), f, 4; show_progress=false)
-end
-
-# ╔═╡ bfc9e429-8578-4875-9a10-fc3b4d8a5983
-begin
-	Plots.stephist(vcat(f...), bins=256, normed=true)
-	Plots.plot!(range(0, π; length=4096), x -> pdf(mixture, x), xlims=[0,π])
+	mixture, labeled = SinusoidDetection.relabel(Random.default_rng(), f, 4; show_progress=false)
 end
 
 # ╔═╡ 399c32f7-dbc9-4e38-bc36-d0914acc1078
@@ -162,6 +156,20 @@ begin
 	Plots.histogram!(labeled[2], bins=range(0, π; length=256), normed=true, alpha=0.5)
 	Plots.histogram!(labeled[3], bins=range(0, π; length=256), normed=true, alpha=0.5)
 	Plots.histogram!(labeled[4], bins=range(0, π; length=256), normed=true, alpha=0.5)
+end
+
+# ╔═╡ bfc9e429-8578-4875-9a10-fc3b4d8a5983
+begin
+	Plots.stephist(vcat(f...), bins=256, normed=true)
+	Plots.plot!(range(0, π; length=4096), x -> pdf(mixture, x), xlims=[0,π])
+end
+
+# ╔═╡ fec2c1ea-ca52-4b4a-b9d9-9ec56d2bfa6f
+begin
+	model_probs, _ = ReversibleJump.modelprob(stats_burn, prior)
+
+	Plots.stephist([stat.order for stat in stats_burn], bins=(0:k_max) .- 0.5, normed=true)
+	Plots.plot!((0:length(model_probs)-1) .- 0.5, line=:step, model_probs)
 end
 
 # ╔═╡ Cell order:
@@ -180,5 +188,6 @@ end
 # ╠═f303d31b-7646-47af-8c5b-94e78377114d
 # ╠═983e6e1e-86b5-4a22-b004-0f9ef26dd93a
 # ╠═c76e555b-470c-47f2-8f1b-1a017395dc84
-# ╠═bfc9e429-8578-4875-9a10-fc3b4d8a5983
 # ╠═399c32f7-dbc9-4e38-bc36-d0914acc1078
+# ╠═bfc9e429-8578-4875-9a10-fc3b4d8a5983
+# ╠═fec2c1ea-ca52-4b4a-b9d9-9ec56d2bfa6f

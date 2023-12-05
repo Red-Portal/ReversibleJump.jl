@@ -69,7 +69,7 @@ function sem_sample_allocation(
         ℓα = min((∑ℓq′ - ∑ℓg′) - (∑ℓq - ∑ℓg), 0)
         ℓu = -Random.randexp(rng, T)
         if ℓu < ℓα
-            z   = z′   
+            z   = z′
             ∑ℓg = ∑ℓg′
             ∑ℓq = ∑ℓq′
         end
@@ -151,7 +151,9 @@ function sem_fit(
                 T(10)
             end
         end
-        pm_next!(prog, (state=:fit_mixture, μ = μ, σ = σ, w = w, λ = λ))
+        next!(prog, showvalues=[
+            (:state,:fit_mixture), (:μ,μ), (:σ,σ), (:w,w), (:λ,λ)
+        ])
     end
     μ, σ, w, λ
 end
@@ -177,8 +179,7 @@ function relabel(
                 push!(labeled[label], xj)
             end
         end
-
-        pm_next!(prog, (state=:relabel, sample_idx = idx))
+        next!(prog, showvalues=[(:state,:relabel), (:sample_idx,idx)])
     end
     MixtureModel(Normal.(μ, σ), w/sum(w)), labeled
 end
