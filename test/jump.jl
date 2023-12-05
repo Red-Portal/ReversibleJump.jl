@@ -24,6 +24,7 @@
             @assert haskey(state′.stats, :move)           && state′.stats.move           == :jump
             @assert haskey(state′.stats, :jump_move)      && state′.stats.jump_move      == :birth
             @assert haskey(state′.stats, :proposal_order) && state′.stats.proposal_order == k_init + 1
+            @assert haskey(state′.stats, :previous_order) && state′.stats.previous_order == k_init
             @assert haskey(state′.stats, :jump_acceptance_rate)
 
             results = map(1:n_samples) do _
@@ -58,6 +59,7 @@
             @assert haskey(state′.stats, :move)           && state′.stats.move           == :jump
             @assert haskey(state′.stats, :jump_move)      && state′.stats.jump_move      == :death
             @assert haskey(state′.stats, :proposal_order) && state′.stats.proposal_order == k_init - 1
+            @assert haskey(state′.stats, :previous_order) && state′.stats.previous_order == k_init
             @assert haskey(state′.stats, :jump_acceptance_rate)
             
             results = map(1:n_samples) do _

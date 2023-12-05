@@ -72,5 +72,6 @@ include("jump.jl")
 include("rjmcmc.jl")
 include("nrjmcmc.jl")
 include("sample.jl")
+include("modelprob.jl")
 
 end

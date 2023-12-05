@@ -17,6 +17,7 @@ function transition_jump(
         
     stats = (move                 = :jump,
              jump_move            = Symbol(move),
+             previous_order       = k,
              proposal_order       = k′,
              jump_acceptance_rate = α,)
     
