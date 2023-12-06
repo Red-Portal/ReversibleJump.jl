@@ -35,32 +35,33 @@ function estimate_bayes_factors_raoblackwellized(
         n_k = get(order_counts, k, 0)
         n_k′ = get(order_counts, k′, 0)
 
-        ℓα_k_given_k′, ℓα_k′_given_k = if n_k == 0 && n_k′ == 0
-            # Equally improbable events. Treat BF as 1
-
-            -max_log_bayesfactor, -max_log_bayesfactor
-
-        elseif n_k == 0
-            # Conditioning on an event that never happend (k)
-            # Treat α(k | k′) / α(k′ | k) → 0
-
-            -max_log_bayesfactor, 0.0
-
-        elseif n_k′ == 0
-            # Conditioning on an event that never happend (k′)
-            # Treat α(k′ | k) / α(k | k′) → 0
-
-            0.0, -max_log_bayesfactor
-
+        ℓα_k_given_k′ = if haskey(acc_rate_estimates, k_given_k′_key)
+            log(value(acc_rate_estimates[k_given_k′_key]))
         else
-            log(value(acc_rate_estimates[k_given_k′_key])),
-                log(value(acc_rate_estimates[k′_given_k_key]))
+            -max_log_bayesfactor
+        end
+
+        ℓα_k′_given_k = if haskey(acc_rate_estimates, k′_given_k_key)
+            log(value(acc_rate_estimates[k′_given_k_key]))
+        else
+            -max_log_bayesfactor
+        end
+
+        if n_k == 0 && n_k′ == 0
+            ℓα_k_given_k′ = -max_log_bayesfactor
+            ℓα_k′_given_k = -max_log_bayesfactor
+        elseif n_k == 0
+            ℓα_k_given_k′ = -max_log_bayesfactor
+            ℓα_k′_given_k = 0.0
+        elseif n_k′ == 0
+            ℓα_k_given_k′ = 0.0
+            ℓα_k′_given_k = -max_log_bayesfactor
         end
         ℓα_k_given_k′ - ℓα_k′_given_k
     end
 end
 
-function modelprob(
+function bayesfactors(
     stats              ::AbstractVector{<:NamedTuple},
     orderprior         ::DiscreteDistribution,
     max_log_bayesfactor::Real = 100.0
@@ -70,7 +71,6 @@ function modelprob(
 
         Model jumps are assumed to be continuous such as k → k+1 and k → k-1
     =##
-    float_abs_max = 20
     jump_stats    = filter(stat -> stat.move == :jump, stats)
     k_max         = maximum([stat.order for stat in jump_stats]) + 1
 
@@ -100,7 +100,7 @@ function modelprob(
         Compute unnormalized posterior odds 
             PO = p(k|y) ∝ BF_{k,0} p(k) 
     =## 
-    log_post_odds = log_bayes_factors_k0 + logpdf.(orderprior, 0:k_max+1)
+    log_post_odds = log_bayes_factors_k0 #+ logpdf.(orderprior, 0:k_max+1)
 
     #=
         Compute Model probability 
@@ -110,6 +110,6 @@ function modelprob(
     log_model_prob   = log_post_odds .- log_norm
     model_prob       = exp.(log_model_prob)
     bayes_factors_k0 = exp.(log_bayes_factors_k0)
-    model_prob/sum(model_prob), bayes_factors_k0
+    bayes_factors_k0, model_prob/sum(model_prob)
 end
 
