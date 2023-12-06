@@ -61,7 +61,7 @@ function estimate_bayes_factors_raoblackwellized(
     end
 end
 
-function bayesfactors(
+function modelposterior(
     stats              ::AbstractVector{<:NamedTuple},
     orderprior         ::DiscreteDistribution,
     max_log_bayesfactor::Real = 100.0
@@ -100,7 +100,7 @@ function bayesfactors(
         Compute unnormalized posterior odds 
             PO = p(k|y) ∝ BF_{k,0} p(k) 
     =## 
-    log_post_odds = log_bayes_factors_k0 #+ logpdf.(orderprior, 0:k_max+1)
+    log_post_odds = log_bayes_factors_k0 + logpdf.(orderprior, 0:k_max+1)
 
     #=
         Compute Model probability 
@@ -109,7 +109,10 @@ function bayesfactors(
     log_norm         = logsumexp(log_post_odds)
     log_model_prob   = log_post_odds .- log_norm
     model_prob       = exp.(log_model_prob)
-    bayes_factors_k0 = exp.(log_bayes_factors_k0)
-    bayes_factors_k0, model_prob/sum(model_prob)
+
+    sup = 0:k_max+1
+    DiscreteNonParametric{
+        eltype(sup),eltype(model_prob),typeof(sup),typeof(model_prob)
+    }(sup, model_prob)
 end
 
