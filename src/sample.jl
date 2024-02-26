@@ -11,7 +11,7 @@ function sample(
 )
     param_chain  = Array{typeof(initial_params)}(undef, n_samples)
     stats_chain  = Array{NamedTuple}(            undef, n_samples)
-    prog         = ProgressMeter.Progress(n_samples; enabled=show_progress)
+    prog         = ProgressMeter.Progress(n_samples; enabled=show_progress, showspeed=true)
     avg_jump_acc = OnlineStats.Mean()
 
     _, state = AbstractMCMC.step(rng, model, sampler; initial_params, initial_order)

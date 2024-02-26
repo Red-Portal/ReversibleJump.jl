@@ -72,7 +72,7 @@ function AbstractMCMC.step(
         end
 
         next = transition_jump(
-            rng, move, jump_proposal, prev, mcmc_kernel, model, (k, k′) -> 1.0
+            rng, move, jump_proposal, prev, mcmc_kernel, model, (k′, k′′) -> 1.0
         )       
         if !next.stats.jump_accepted
             @set next.direction = !direction

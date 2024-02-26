@@ -13,15 +13,14 @@ function transition_jump(
     qktok′, qk′tok = order_kernel(k, k′), order_kernel(k′, k)
 
     ℓα = min(0, ℓr - log(qktok′/qk′tok))
-    α  = exp(ℓα)
         
     stats = (move                 = :jump,
              jump_move            = Symbol(move),
              previous_order       = k,
              proposal_order       = k′,
-             jump_acceptance_rate = α,)
+             jump_acceptance_rate = exp(ℓα),)
     
-    if  log(rand(rng)) < ℓα
+    if  -Random.randexp(rng) < ℓα
         stats′ = merge(stats, (jump_accepted=true,))
         @set prop.stats = stats′
     else

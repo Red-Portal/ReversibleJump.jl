@@ -22,7 +22,8 @@ function ReversibleJumpMCMC(
     jump_rate    ::Real                                   = 0.5, 
 )
     @assert length(move_weights) == length(move_pairs)
-    order_kernel(k, k′) = jump_rate*min(pdf(order_prior, k′)/pdf(order_prior, k), 1)
+    ϵ = eps(typeof(jump_rate))
+    order_kernel(k, k′) = jump_rate*min(logpdf(order_prior, k′)/(pdf(order_prior, k) + ϵ), 1)
     ReversibleJumpMCMC(
         jump_proposal, move_pairs, move_weights, order_kernel, mcmc_kernel
     )
