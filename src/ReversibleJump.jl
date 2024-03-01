@@ -11,6 +11,7 @@ export
     BirthDeath,
     IndepJumpProposal,
     AnnealedJumpProposal,
+    QPath,
     GeometricPath,
     ArithmeticPath,
     ReversibleJumpMCMC,
