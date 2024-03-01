@@ -1,9 +1,39 @@
 
 abstract type AbstractAnnealingPath end
 
-struct GeometricPath <: AbstractAnnealingPath end
+# Brekelmans, Rob, et al. "Annealed importance sampling with q-paths." NeurIPS'20.
+struct QPath{Q <: Real} <: AbstractAnnealingPath
+    q::Q
 
-struct ArithmeticPath <: AbstractAnnealingPath end
+    function QPath(q::Real)
+        @assert 0 ≤ q ≤ 1
+        new{typeof(q)}(q)
+    end
+end
+
+function anneal(path::QPath, ℓρ_T, ℓρ_0, t, T)
+    # ((1 - β)*ℓρ_0^(1 - q) + β*ℓρ_T^(1 - q))^(1/(1 - q))
+    #
+    # (1/(1 - q))*log(
+    #     exp( log(1 - β) + (1 - q)*log(ℓρ_0) ) + exp(log(β) + (1 - q)*log(ℓρ_T) )
+    # )
+
+    q  = path.q
+    β  = t/T
+    ℓβ = log(β)
+
+    if q == 1
+        β*ℓρ_T + (1 - β)*ℓρ_0
+    else
+        1/(1 - q)*logaddexp(
+            (1 - q)*ℓρ_0 + log1mexp(ℓβ), (1 - q)*ℓρ_T + ℓβ
+        )
+    end
+end
+
+GeometricPath()  = QPath(1.0)
+
+ArithmeticPath() = QPath(0.0)
 
 struct AnnealedJumpProposal{
     Prop,
@@ -28,16 +58,6 @@ struct AnnealedTarget{
     fwd_density::FWD
     bwd_density::BWD
     path       ::AnnealPath
-end
-
-function anneal(::GeometricPath, ℓρ_T, ℓρ_0, t, T)
-    γ = (t/T)
-    γ*ℓρ_T + (1 - γ)*ℓρ_0
-end
-
-function anneal(::ArithmeticPath, ℓρ_T, ℓρ_0, t, T)
-    ℓγ  = log(t/T)
-    logaddexp(ℓρ_0 + log1mexp(ℓγ), ℓρ_T + ℓγ)
 end
 
 function logdensity(annealed::AnnealedTarget, θ)
