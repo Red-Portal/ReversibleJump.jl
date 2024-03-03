@@ -5,8 +5,8 @@
     prop  = ConstantLocalProposal()
     mcmc  = IdentityKernel()
 
-    @testset for annealing_path = [GeometricPath(), ArithmeticPath()]
-        jump  = AnnealedJumpProposal(4, prop, annealing_path)
+    @testset for annealing_path = [GeometricPath(4), ArithmeticPath(4)]
+        jump  = AnnealedJumpProposal(prop, annealing_path)
 
         @testset "birth" begin
             rng    = Random.default_rng()

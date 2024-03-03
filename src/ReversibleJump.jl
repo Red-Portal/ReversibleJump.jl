@@ -12,6 +12,7 @@ export
     IndepJumpProposal,
     AnnealedJumpProposal,
     QPath,
+    CustomPath,
     GeometricPath,
     ArithmeticPath,
     ReversibleJumpMCMC,

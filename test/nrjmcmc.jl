@@ -31,8 +31,9 @@ end
     statistics       = θ -> [length(θ)]
 
     @testset for jump in [
-        AnnealedJumpProposal(n_anneal, prop, ArithmeticPath()),
-        AnnealedJumpProposal(n_anneal, prop, GeometricPath()),
+        AnnealedJumpProposal(prop, ArithmeticPath(n_anneal)),
+        AnnealedJumpProposal(prop, GeometricPath(n_anneal)),
+        AnnealedJumpProposal(prop, CustomPath(range(0, 1; length=n_anneal).^2)),
         IndepJumpProposal(prop)
     ]
         nrjmcmc = ReversibleJump.NonReversibleJumpMCMC(jump, mcmc)

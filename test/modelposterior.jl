@@ -6,7 +6,7 @@
     )
 
     n_anneal   = 8
-    path       = ArithmeticPath()
+    path       = ArithmeticPath(n_anneal)
     prop       = ConstantLocalProposal()
     mcmc       = IdentityKernel()
     n_samples  = 1000
@@ -15,7 +15,7 @@
     initial_params = [0.0]
 
     rjmcmc = ReversibleJump.ReversibleJumpMCMC(
-        prior, AnnealedJumpProposal(n_anneal, prop, path), mcmc
+        prior, AnnealedJumpProposal(prop, path), mcmc
     )
     samples, stats = ReversibleJump.sample(
         rjmcmc,

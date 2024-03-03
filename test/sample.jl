@@ -4,7 +4,7 @@
     model  = DiscreteModel(Poisson(4))
 
     n_anneal   = 8
-    path       = ArithmeticPath()
+    path       = ArithmeticPath(n_anneal)
     prop       = ConstantLocalProposal()
     mcmc       = IdentityKernel()
     n_samples  = 100
@@ -14,13 +14,13 @@
 
     @testset for sampler in [
         ReversibleJump.ReversibleJumpMCMC(
-            model.order_dist, AnnealedJumpProposal(n_anneal, prop, path), mcmc
+            model.order_dist, AnnealedJumpProposal(prop, path), mcmc
         ),
         ReversibleJump.ReversibleJumpMCMC(
             model.order_dist, IndepJumpProposal(prop), mcmc
         ),
         ReversibleJump.NonReversibleJumpMCMC(
-            AnnealedJumpProposal(n_anneal, prop, path), mcmc
+            AnnealedJumpProposal(prop, path), mcmc
         ),
         ReversibleJump.NonReversibleJumpMCMC(
             IndepJumpProposal(prop), mcmc

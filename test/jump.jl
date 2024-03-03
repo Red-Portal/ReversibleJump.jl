@@ -6,7 +6,7 @@
 
     n_samples = 1024
 
-    @testset for jump_proposal = [AnnealedJumpProposal(4, prop, GeometricPath()),
+    @testset for jump_proposal = [AnnealedJumpProposal(prop, GeometricPath(4)),
                                   IndepJumpProposal(prop)]
         @testset "birth" begin
             move   = ReversibleJump.Birth()
