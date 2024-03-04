@@ -115,8 +115,8 @@ function step_ais(
         if !isfinite(ℓρₜ)
             break
         end
-        θ, ℓρₜ′ = transition_mcmc(rng, mcmc, target_annealed, θ)
-        ℓr    += ℓρₜ - ℓρₜ′
+        θ, ℓρₜ′, _ = transition_mcmc(rng, mcmc, target_annealed, θ)
+        ℓr        += ℓρₜ - ℓρₜ′
     end
     ℓπ′  = logdensity(model, θ)
     ℓr += ℓπ′ + ϕ_k′tok(θ)

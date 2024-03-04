@@ -60,7 +60,7 @@ function AbstractMCMC.step(
     direction   = prev.direction
 
     next = if rand(rng) ≤ update_rate
-        next_param, lp = transition_mcmc(rng, mcmc_kernel, model, prev.param)
+        next_param, lp, _ = transition_mcmc(rng, mcmc_kernel, model, prev.param)
         setproperties(prev, (param = next_param,
                              lp    = lp,
                              stats = (move = :update,)))

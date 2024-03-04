@@ -77,7 +77,7 @@ function AbstractMCMC.step(
     stats           = (update_rate = p_update,)
 
     next = if rand(rng, Bernoulli(p_update))
-        next_param, lp = transition_mcmc(rng, mcmc_kernel, model, prev.param)
+        next_param, lp, _ = transition_mcmc(rng, mcmc_kernel, model, prev.param)
         RJState(next_param, lp, prev.order, (move = :update,))
     else
         move = rand(rng, Bernoulli(p_fwd/(p_fwd + p_bwd))) ? move_fwd : move_bwd
