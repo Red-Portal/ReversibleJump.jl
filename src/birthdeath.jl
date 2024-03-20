@@ -33,15 +33,15 @@ function propose_jump(
     newborn = local_proposal_sample(rng, model, jump.local_proposal)
     θ′       = local_insert(model, θ, j, newborn)
 
-    ℓqktok′ = local_proposal_logpdf(model, jump.local_proposal, θ′, j) + log(1/k′)
-    ℓqk′tok = log(1/k′)
+    ℓq_fwd = local_proposal_logpdf(model, jump.local_proposal, θ′, j) + log(1/k′)
+    ℓq_bwd = log(1/k′)
 
     ℓπ′  = logdensity(model, θ′)
     prop = setproperties(prev, (param = θ′,
                                 lp    = ℓπ′,
                                 order = k′,
                                 stats = NamedTuple()))
-    prop, (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
+    prop, (ℓπ′ - ℓπ) - (ℓq_fwd - ℓq_bwd)
 end
 
 function propose_jump(
@@ -68,15 +68,15 @@ function propose_jump(
 
     θ′, _ = local_deleteat(model, θ, j)
 
-    ℓqktok′ = log(1/k)
-    ℓqk′tok = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/k)
+    ℓq_fwd = log(1/k)
+    ℓq_bwd = local_proposal_logpdf(model, jump.local_proposal, θ, j) + log(1/k)
 
     ℓπ′ = logdensity(model, θ′)
     prop = setproperties(prev, (param = θ′,
                                 lp    = ℓπ′,
                                 order = k′,
                                 stats = NamedTuple()))
-    prop, (ℓπ′ - ℓπ) - (ℓqktok′ - ℓqk′tok)
+    prop, (ℓπ′ - ℓπ) - (ℓq_fwd - ℓq_bwd)
 end
 
 function propose_jump(
@@ -104,12 +104,15 @@ function propose_jump(
     newborn = local_proposal_sample(rng, model, proposal.local_proposal)
     θ′       = local_insert(model, θ, j, newborn)
 
-    G⁻¹(θ_)    = first(local_deleteat(model, θ_, j))
-    ϕktok′(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/(k + 1))
-    ϕk′tok(θ_) = log(1/k′)
+    map_fwd(θ_) = θ_
+    map_bwd(θ_) = first(local_deleteat(model, θ_, j))
+    ℓq_fwd(θ_)  = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/k′)
+    ℓq_bwd(θ_)  = log(1/k′)
 
-    θ′, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    prop = setproperties(prev, (param = θ′,
+    θ′, ℓπ′, ℓr, stat = step_ais(
+        rng, proposal, mcmc, model, θ′, ℓπ, map_fwd, map_bwd, ℓq_fwd, ℓq_bwd
+    )
+    prop = setproperties(prev, (param = map_fwd(θ′),
                                 lp    = ℓπ′,
                                 order = k′,
                                 stats = stat))
@@ -135,16 +138,18 @@ function propose_jump(
     θ  = prev.param
     k  = prev.order
 
-    j     = rand(rng, DiscreteUniform(1, k))
-    θ′, θⱼ = local_deleteat(model, θ, j)
-    k′     = k - 1
+    j = rand(rng, DiscreteUniform(1, k))
+    k′ = k - 1
 
-    G⁻¹(θ_)   = local_insert(model, θ_, j, θⱼ)
-    ϕktok′(θ_) = log(1/k)
-    ϕk′tok(θ_) = local_proposal_logpdf(model, proposal.local_proposal, θ, j) + log(1/(k′ + 1))
+    map_fwd(θ_) = first(local_deleteat(model, θ_, j))
+    map_bwd(θ_) = θ_
+    ℓq_fwd(θ_)  = log(1/k)
+    ℓq_bwd(θ_)  = local_proposal_logpdf(model, proposal.local_proposal, θ_, j) + log(1/k)
 
-    θ′, ℓπ′, ℓr, stat = step_ais(rng, proposal, mcmc, model, θ′, ℓπ, G⁻¹, ϕktok′, ϕk′tok)
-    prop = setproperties(prev, (param = θ′,
+    θ′, ℓπ′, ℓr, stat = step_ais(
+        rng, proposal, mcmc, model, θ, ℓπ, map_fwd, map_bwd, ℓq_fwd, ℓq_bwd
+    )
+    prop = setproperties(prev, (param = map_fwd(θ′),
                                 lp    = ℓπ′,
                                 order = k′,
                                 stats = stat))

@@ -65,24 +65,22 @@ struct AnnealedJumpProposal{
 end
 
 struct AnnealedTarget{
-    Model,
-    INV,
-    FWD,
-    BWD,
+    Model, MF, MB, LF, LB,
     AnnealPath <: AbstractAnnealingPath
 }
-    model      ::Model
-    t          ::Int
-    inverse_map::INV
-    fwd_density::FWD
-    bwd_density::BWD
-    path       ::AnnealPath
+    model          ::Model
+    t              ::Int
+    map_fwd        ::MF
+    map_bwd        ::MB
+    logprob_aux_fwd::LF
+    logprob_aux_bwd::LB
+    path           ::AnnealPath
 end
 
 function logdensity(annealed::AnnealedTarget, θ)
-    @unpack model, t, inverse_map, fwd_density, bwd_density, path = annealed
-    ℓρ_T = logdensity(model, θ) + bwd_density(θ)
-    ℓρ_0 = logdensity(model, inverse_map(θ)) + fwd_density(θ)
+    @unpack model, t, map_fwd, map_bwd, logprob_aux_fwd, logprob_aux_bwd, path = annealed
+    ℓρ_T = logdensity(model, map_fwd(θ)) + logprob_aux_bwd(θ)
+    ℓρ_0 = logdensity(model, map_bwd(θ)) + logprob_aux_fwd(θ)
     anneal(path, ℓρ_0, ℓρ_T, t)
 end
 
@@ -93,9 +91,10 @@ function step_ais(
     model,
     θ,
     ℓπ,
-    G⁻¹,
-    ϕ_ktok′,
-    ϕ_k′tok,
+    map_fwd,
+    map_bwd,
+    ℓq_fwd,
+    ℓq_bwd,
 )
     #=
         Generic Annealed Importance Sampling Jump Proposal
@@ -105,10 +104,8 @@ function step_ais(
         in Journal of Computational and Graphical Statistics, 2013.
     =##
     @unpack path = jump 
-
-    ℓr  = -ℓπ - ϕ_ktok′(θ)
-
-    target = AnnealedTarget(model, 0, G⁻¹, ϕ_ktok′, ϕ_k′tok, path)
+    ℓr     = -(ℓπ + ℓq_fwd(θ))
+    target = AnnealedTarget(model, 0, map_fwd, map_bwd, ℓq_fwd, ℓq_bwd, path)
     for t in 1:length(path)-1
         target_annealed = @set target.t = t
         ℓρₜ = logdensity(target_annealed, θ)
@@ -118,8 +115,8 @@ function step_ais(
         θ, ℓρₜ′, _ = transition_mcmc(rng, mcmc, target_annealed, θ)
         ℓr        += ℓρₜ - ℓρₜ′
     end
-    ℓπ′  = logdensity(model, θ)
-    ℓr += ℓπ′ + ϕ_k′tok(θ)
+    ℓπ′  = logdensity(model, map_fwd(θ))
+    ℓr += ℓπ′ + ℓq_bwd(θ)
     θ, ℓπ′, ℓr, NamedTuple()
 end
 
