@@ -12,7 +12,9 @@ function sample(
     param_chain  = Array{typeof(initial_params)}(undef, n_samples)
     stats_chain  = Array{NamedTuple}(undef, n_samples)
     prog         = ProgressMeter.Progress(n_samples; enabled=show_progress, showspeed=true)
-    avg_jump_acc = OnlineStats.Mean()
+
+    avg_jump_acc_est   = OnlineMean{Float64}()
+    avg_jump_acc_state = init(avg_jump_acc_est)
 
     _, state = AbstractMCMC.step(rng, model, sampler; initial_params, initial_order)
     for t in 1:n_samples
@@ -20,8 +22,10 @@ function sample(
         stats = merge((iteration=t, order=state.order, logtarget=state.lp), state.stats)
 
         stats = if stats.move != :update
-            fit!(avg_jump_acc, stats.jump_acceptance_rate)
-            merge(stats, (average_jump_rate=value(avg_jump_acc),))
+            avg_jump_acc, avg_jump_acc_state = fit(
+                avg_jump_acc_est, avg_jump_acc_state, stats.jump_acceptance_rate
+            )
+            merge(stats, (average_jump_rate=avg_jump_acc,))
         else
             stats
         end
