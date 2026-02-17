@@ -70,7 +70,7 @@ struct AnnealedTarget{Model,MF,MB,LF,LB,AnnealPath<:AbstractAnnealingPath}
 end
 
 function logdensity(annealed::AnnealedTarget, θ)
-    @unpack model, t, map_fwd, map_bwd, logprob_aux_fwd, logprob_aux_bwd, path = annealed
+    (; model, t, map_fwd, map_bwd, logprob_aux_fwd, logprob_aux_bwd, path) = annealed
     ℓρ_T = logdensity(model, map_fwd(θ)) + logprob_aux_bwd(θ)
     ℓρ_0 = logdensity(model, map_bwd(θ)) + logprob_aux_fwd(θ)
     anneal(path, ℓρ_0, ℓρ_T, t)
@@ -95,7 +95,7 @@ function step_ais(
         "Annealed Importance Sampling Reversible Jump MCMC Algorithms"
         in Journal of Computational and Graphical Statistics, 2013.
     =#
-    @unpack path = jump
+    (; path) = jump
     ℓr = -(ℓπ + ℓq_fwd(θ))
     target = AnnealedTarget(model, 0, map_fwd, map_bwd, ℓq_fwd, ℓq_bwd, path)
     for t in 1:(length(path) - 1)

@@ -51,7 +51,7 @@ function AbstractMCMC.step(
     prev::NRJState;
     kwargs...,
 )
-    @unpack jump_proposal, move_pairs, move_weights, mcmc_kernel, update_rate = sampler
+    (; jump_proposal, move_pairs, move_weights, mcmc_kernel, update_rate) = sampler
 
     move_pair   = StatsBase.sample(rng, move_pairs, move_weights)
     k           = prev.order
