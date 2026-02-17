@@ -9,9 +9,9 @@ function sample(
     show_progress::Bool = true,
     callback            = nothing,
 )
-    param_chain  = Array{typeof(initial_params)}(undef, n_samples)
-    stats_chain  = Array{NamedTuple}(undef, n_samples)
-    prog         = ProgressMeter.Progress(n_samples; enabled=show_progress, showspeed=true)
+    param_chain = Array{typeof(initial_params)}(undef, n_samples)
+    stats_chain = Array{NamedTuple}(undef, n_samples)
+    prog        = ProgressMeter.Progress(n_samples; enabled=show_progress, showspeed=true)
 
     avg_jump_acc_est   = OnlineMean{Float64}()
     avg_jump_acc_state = init(avg_jump_acc_est)
