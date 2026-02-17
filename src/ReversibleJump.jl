@@ -22,10 +22,8 @@ using AbstractMCMC
 using Accessors
 using Distributions
 using LogExpFunctions
-using OnlineStats
 using ProgressMeter
 using Random
-using SimpleUnPack
 using StatsBase
 
 function local_proposal_sample end
