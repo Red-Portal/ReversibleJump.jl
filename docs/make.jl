@@ -13,13 +13,7 @@ makedocs(;
         edit_link="main",
         assets=String[],
     ),
-    pages=[
-        "Home"       => "index.md",
-        "Benchmarks" => "benchmarks.md"
-    ],
+    pages=["Home" => "index.md", "Benchmarks" => "benchmarks.md"],
 )
 
-deploydocs(;
-    repo="github.com/Red-Portal/ReversibleJump.jl",
-    devbranch="main",
-)
+deploydocs(; repo="github.com/Red-Portal/ReversibleJump.jl", devbranch="main")

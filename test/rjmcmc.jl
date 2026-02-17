@@ -1,5 +1,5 @@
 
-struct RJMCMCTestSampler{RJMCMC <: ReversibleJumpMCMC}
+struct RJMCMCTestSampler{RJMCMC<:ReversibleJumpMCMC}
     rjmcmc::RJMCMC
 end
 
@@ -10,15 +10,13 @@ function MCMCTesting.markovchain_transition(
     _, init_state = AbstractMCMC.step(
         rng, model, rjmcmc; initial_params=θ, initial_order=length(θ)
     )
-    _, state = AbstractMCMC.step(
-        rng, model, rjmcmc, init_state
-    )
+    _, state = AbstractMCMC.step(rng, model, rjmcmc, init_state)
     state.param
 end
 
 @testset "rjmcmc" begin
-    rng    = Random.default_rng()
-    model  = DiscreteModel(Poisson(4))
+    rng   = Random.default_rng()
+    model = DiscreteModel(Poisson(4))
 
     n_anneal = 8
     prop     = ConstantLocalProposal()
@@ -34,12 +32,13 @@ end
     @testset for jump in [
         AnnealedJumpProposal(prop, ArithmeticPath(n_anneal)),
         AnnealedJumpProposal(prop, GeometricPath(n_anneal)),
-        AnnealedJumpProposal(prop, CustomPath(range(0, 1; length=n_anneal).^2)),
-        IndepJumpProposal(prop)
+        AnnealedJumpProposal(prop, CustomPath(range(0, 1; length=n_anneal) .^ 2)),
+        IndepJumpProposal(prop),
     ]
         rjmcmc  = ReversibleJump.ReversibleJumpMCMC(model.order_dist, jump, mcmc)
         subject = TestSubject(model, RJMCMCTestSampler(rjmcmc))
-        @test seqmcmctest(rng, test, subject, 0.001, n_pvalue_samples;
-                          statistics, show_progress=false)
+        @test seqmcmctest(
+            rng, test, subject, 0.001, n_pvalue_samples; statistics, show_progress=false
+        )
     end
 end

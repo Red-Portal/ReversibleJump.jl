@@ -1,8 +1,7 @@
 
 module ReversibleJump
 
-export
-    local_proposal_sample,
+export local_proposal_sample,
     local_proposal_logpdf,
     local_insert,
     local_deleteat,
@@ -31,12 +30,12 @@ using StatsBase
 
 function local_proposal_sample end
 function local_proposal_logpdf end
-function local_insert          end
-function local_deleteat        end
-function logdensity            end
-function propose_jump          end
-function transition_mcmc       end
-function transition_jump       end
+function local_insert end
+function local_deleteat end
+function logdensity end
+function propose_jump end
+function transition_mcmc end
+function transition_jump end
 
 abstract type AbstractRJMCMCSampler <: AbstractMCMC.AbstractSampler end
 
@@ -44,22 +43,22 @@ abstract type AbstractJumpProposal end
 
 abstract type AbstractRJState end
 
-struct RJState{Param, NT <: NamedTuple} <: AbstractRJState
-    param::Param
-    lp   ::Real
-    order::Int
-    stats::NT
+struct RJState{Param,NT<:NamedTuple} <: AbstractRJState
+    param :: Param
+    lp    :: Real
+    order :: Int
+    stats :: NT
 end
 
-struct NRJState{Param, NT <: NamedTuple} <: AbstractRJState
-    direction::Bool
-    param    ::Param
-    lp       ::Real
-    order    ::Int
-    stats    ::NT
+struct NRJState{Param,NT<:NamedTuple} <: AbstractRJState
+    direction :: Bool
+    param     :: Param
+    lp        :: Real
+    order     :: Int
+    stats     :: NT
 end
 
-abstract type AbstractJumpMove     end
+abstract type AbstractJumpMove end
 
 abstract type AbstractJumpMovePair end
 
